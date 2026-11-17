@@ -1,0 +1,17 @@
+# OS / editor
+.DS_Store
+Thumbs.db
+.vscode/*
+!.vscode/extensions.json
+.idea/
+
+# Secrets: never commit real env files
+.env
+.env.*
+!.env.example
+
+# Logs
+*.log
+
+# Docker volumes
+pgdata/
