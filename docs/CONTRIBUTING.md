@@ -1,26 +1,24 @@
-# Contributing
-
 ## Branches
 
-- `main`: stable, always runnable. Nobody pushes directly.
-- `develop`: integration branch. All feature work merges here through pull requests.
-- Feature branches: created from `develop`, named `type/area-short-description`.
+- `main`: stable, always runnable. Nobody pushes directly; changes arrive through pull requests.
+- Feature branches: created from `main`, named `type/area-short-description`.
 
 Examples: `feature/donor-pledge-page`, `feature/backend-opportunity-model`, `fix/mpesa-callback`, `docs/api-endpoints`.
 
 ## Workflow
 
 ```bash
-git checkout develop
-git pull origin develop
-git checkout -b feature/donor-pledge-page
+git switch main
+git pull origin main
+git switch -c feature/donor-pledge-page
 # work, then:
 git add <files>
 git commit -m "feat(donor): add pledge form"
 git push -u origin feature/donor-pledge-page
 ```
 
-Open a pull request into `develop`. At least one teammate reviews it before merging.
+Open a pull request into `main`. At least one teammate reviews it before merging.
+Keep your branch up to date with `git fetch origin` then `git merge origin/main`.
 
 ## Commit messages
 
@@ -28,7 +26,7 @@ Open a pull request into `develop`. At least one teammate reviews it before merg
 
 ## Rules
 
-- Pull `develop` before starting new work and before opening a PR.
+- Pull `main` before starting new work and before opening a PR.
 - Keep PRs small and focused on one thing.
 - Never commit `.env` files, secrets or API keys.
 - Work in your own area's files where possible to avoid merge conflicts.
