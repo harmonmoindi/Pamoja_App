@@ -1,7 +1,7 @@
+import { RouterProvider } from "react-router";
+import { router } from "@/routes";
+
+// Authentication is added later: wrap <RouterProvider> in <AuthProvider> then.
 export default function App() {
-  return (
-    <main className="min-h-screen flex items-center justify-center">
-      <h1 className="text-2xl font-semibold">Pamoja Humanitarian Coordination Platform</h1>
-    </main>
-  );
+  return <RouterProvider router={router} />;
 }
