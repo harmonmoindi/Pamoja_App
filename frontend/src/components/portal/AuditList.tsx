@@ -30,7 +30,9 @@ export function AuditList({ events }: { events: AuditEvent[] }) {
             </span>
             <div>
               <b>{event.title}</b>
-              <p>{event.description}</p>
+              <p>
+                {event.description} · {event.actor}
+              </p>
             </div>
             <small>{formatDateTime(event.timestamp)}</small>
           </div>
