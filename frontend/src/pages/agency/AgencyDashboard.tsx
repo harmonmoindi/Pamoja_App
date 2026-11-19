@@ -1,4 +1,5 @@
 import { ClipboardList, Package, Truck, CheckCircle, AlertCircle } from "lucide-react";
+import { PageHead } from "@/components/ui/PageHead";
 
 const stats = [
   { title: "Total Requests", value: "120", icon: ClipboardList },
@@ -16,6 +17,11 @@ const recentRequests = [
 export default function AgencyDashboard() {
   return (
     <div className="min-h-screen bg-gray-100 p-6">
+      <PageHead
+        eyebrow="Agency Workspace"
+        title="Agency Dashboard"
+        description="Monitor assistance requests, resources, and humanitarian operations."
+      />
       <header className="mb-8">
         <h1 className="text-3xl font-bold text-gray-800">Agency Dashboard</h1>
         <p className="mt-2 text-gray-600">Welcome to the Pamoja Humanitarian Coordination Platform.</p>
