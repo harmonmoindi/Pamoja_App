@@ -1,8 +1,8 @@
-import { Navigate, RouteObject } from "react-router";
+import { Navigate, type RouteObject } from "react-router";
 import { PortalLayout } from "@/components/layout/PortalLayout";
 import { page } from "./lazyPage";
 
-// Owned by the Agency dev. Add new agency routes here only.
+// Agency Portal routes
 export const agencyRoutes: RouteObject = {
   path: "/agency",
   element: <PortalLayout role="agency" />,
@@ -16,6 +16,6 @@ export const agencyRoutes: RouteObject = {
     { path: "tasks", element: page("agency/TaskBoard") },
     { path: "deliveries", element: page("agency/Deliveries") },
     { path: "centres", element: page("agency/CollectionCentresManage") },
-    { path: "appointments", element: page("agency/AppointmentsManage") },
-  ],
+    { path: "appointments", element: page("agency/AppointmentsManage") }
+  ]
 };
