@@ -1,0 +1,67 @@
+import { Link, useParams } from "react-router";
+import { BeneficiaryPage } from "@/components/beneficiary/BeneficiaryPage";
+import { ProcessSteps } from "@/components/beneficiary/ProcessSteps";
+import { useBeneficiaryRequests } from "@/components/beneficiary/BeneficiaryRequests";
+
+export default function RequestDetail() {
+  const { reference = "" } = useParams();
+  const { requests, confirmReceipt } = useBeneficiaryRequests();
+  const request = requests.find((item) => item.reference.toLowerCase() === reference.toLowerCase());
+
+  if (!request) {
+    return (
+      <BeneficiaryPage title="Request not found" description="That demonstration reference is not saved in this browser.">
+        <Link className="bn-secondary bn-section" to="/beneficiary/requests">
+          Back to my requests
+        </Link>
+      </BeneficiaryPage>
+    );
+  }
+
+  return (
+    <BeneficiaryPage
+      title={request.title}
+      description={`${request.reference} · Submitted ${request.submittedOn}. Fictional demonstration record.`}
+      action={
+        <Link className="bn-secondary" to="/beneficiary/requests">
+          All requests
+        </Link>
+      }
+    >
+      <div className="bn-dash bn-section">
+        <section className="bn-panel bn-detail">
+          <span className={`bn-status ${request.status === "approved" ? "" : request.status.replace(" ", "-")}`}>{request.status}</span>
+          <dl>
+            <div>
+              <dt>Category</dt>
+              <dd>{request.category}</dd>
+            </div>
+            <div>
+              <dt>Location</dt>
+              <dd>{request.location}</dd>
+            </div>
+            <div>
+              <dt>Reference</dt>
+              <dd>{request.reference}</dd>
+            </div>
+          </dl>
+          <p>{request.summary}</p>
+          {request.status === "approved" && (
+            <button className="bn-primary" type="button" onClick={() => confirmReceipt(request.reference)}>
+              Confirm receipt
+            </button>
+          )}
+          {request.status === "fulfilled" && <p className="bn-note">Receipt confirmed for this demonstration. No delivery took place.</p>}
+          {request.status === "under review" && <p className="bn-note">Waiting for an agency decision in this demonstration.</p>}
+        </section>
+        <section className="bn-panel bn-process">
+          <h2>How the process works</h2>
+          <ProcessSteps />
+          <Link className="bn-secondary block" to="/beneficiary/tracking">
+            View full workflow
+          </Link>
+        </section>
+      </div>
+    </BeneficiaryPage>
+  );
+}

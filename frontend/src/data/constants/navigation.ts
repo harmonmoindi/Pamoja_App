@@ -12,13 +12,11 @@ export const roleNav: Record<PortalRole, [string, string][]> = {
     ["Preferences", "/donor/preferences"],
   ],
   beneficiary: [
-    ["Overview", "/beneficiary/dashboard"],
-    ["Request assistance", "/beneficiary/request"],
-    ["My requests", "/beneficiary/requests"],
-    ["Request tracking", "/beneficiary/tracking"],
-    ["Confirm receipt", "/beneficiary/receipt"],
-    ["Collection centres", "/collection-centres"],
-    ["My appointments", "/beneficiary/appointments"],
+    ["Dashboard", "/beneficiary/dashboard"],
+    ["Request Assistance", "/beneficiary/request"],
+    ["My Requests", "/beneficiary/requests"],
+    ["Request Tracking", "/beneficiary/tracking"],
+    ["Confirm Receipt", "/beneficiary/receipt"],
     ["Notifications", "/beneficiary/notifications"],
   ],
   agency: [
