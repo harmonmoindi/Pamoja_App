@@ -1,0 +1,86 @@
+import type { Opportunity } from "../../types/opportunity";
+
+export const mockOpportunities: Opportunity[] = [
+  {
+      id: 1,
+      title: "Food Support for Vulnerable Families",
+      description: "Help provide essential food supplies to vulnerable families in need.",
+      category: "Food",
+      location: "Nairobi, Kenya",
+      targetAmount: 500000,
+      raisedAmount: 325000,
+      beneficiaries: 250,
+      status: "active" as Opportunity["status"],
+      image: "https://images.unsplash.com/photo-1488521787991-ed7bbaae773c?auto=format&fit=crop&w=1000&q=80",
+      createdAt: "2026-10-15",
+      county: "",
+      urgency: "Low",
+      organization: ""
+  },
+  {
+    id: 2,
+    title: "Medical Supplies for Community Clinics",
+    description:
+      "Support community clinics with essential medical supplies and equipment.",
+    category: "Medical",
+    location: "Kisumu, Kenya",
+    targetAmount: 800000,
+    raisedAmount: 450000,
+    beneficiaries: 500,
+    status: "active" as Opportunity["status"],
+    image: "https://images.unsplash.com/photo-1584515933487-779824d29309?auto=format&fit=crop&w=1000&q=80",
+    createdAt: "2026-10-20",
+    county: "",
+    urgency: "Low",
+    organization: ""
+  },
+  {
+      id: 3,
+      title: "Education for Every Child",
+      description: "Help disadvantaged children access educational materials and school supplies.",
+      category: "Education",
+      location: "Mombasa, Kenya",
+      targetAmount: 300000,
+      raisedAmount: 300000,
+      beneficiaries: 150,
+      status: "completed" as Opportunity["status"],
+      image: "https://images.unsplash.com/photo-1509062522246-3755977927d7?auto=format&fit=crop&w=1000&q=80",
+      createdAt: "2026-09-10",
+      county: "",
+      urgency: "Low",
+      organization: ""
+  },
+  {
+      id: 4,
+      title: "Emergency Shelter Assistance",
+      description: "Provide temporary shelter and essential supplies to displaced families.",
+      category: "Shelter",
+      location: "Garissa, Kenya",
+      targetAmount: 600000,
+      raisedAmount: 210000,
+      beneficiaries: 180,
+      status: "active" as Opportunity["status"],
+      image: "https://images.unsplash.com/photo-1488521787991-ed7bbaae773c?auto=format&fit=crop&w=1000&q=80",
+      createdAt: "2026-10-25",
+      county: "",
+      urgency: "Low",
+      organization: ""
+  },
+  {
+    id: 5,
+    title: "Emergency Relief Fund",
+    description:
+      "Provide urgent assistance to communities affected by emergencies.",
+    category: "Other",
+    location: "Turkana, Kenya",
+    targetAmount: 1000000,
+    raisedAmount: 650000,
+    beneficiaries: 700,
+    status: "active" as Opportunity["status"],
+    image: "https://images.unsplash.com/photo-1469571486292-0ba58a3f068b?auto=format&fit=crop&w=1000&q=80",
+    createdAt: "2026-10-28",
+    county: "",
+    urgency: "Low",
+    organization: ""
+  },
+];
