@@ -19,7 +19,8 @@ class User(TimestampMixin, db.Model):
     county = db.Column(db.String(80))
     last_active_at = db.Column(db.DateTime)
 
-    organizations = db.relationship("Organization", back_populates="owner")
+    # organizations this user owns (Organization has two links to users, so we name the one we mean)
+    organizations = db.relationship("Organization", back_populates="owner", foreign_keys="Organization.owner_id")
 
     def set_password(self, password: str) -> None:
         self.password_hash = generate_password_hash(password)
