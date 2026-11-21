@@ -64,7 +64,11 @@ export async function api<T>(path: string, options: Options = {}): Promise<T> {
   const data = await response.json().catch(() => null);
 
   if (!response.ok) {
-    if (response.status === 401 && auth) clearToken(); // session expired or invalid
+    if (response.status === 401 && auth) {
+      // Session expired or invalid: forget the token and tell the app to sign the user out.
+      clearToken();
+      window.dispatchEvent(new Event("pamoja:unauthorized"));
+    }
     const error = data?.error;
     throw new ApiError(
       response.status,

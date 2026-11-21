@@ -1,16 +1,25 @@
-import { createBrowserRouter } from "react-router";
-import { publicRoutes } from "./publicRoutes";
-import { donorRoutes } from "./donorRoutes";
-import { beneficiaryRoutes } from "./beneficiaryRoutes";
-import { agencyRoutes } from "./agencyRoutes";
+import { createBrowserRouter, RouteObject } from "react-router";
+import { UserRole } from "@/types/user";
 import { adminRoutes } from "./adminRoutes";
+import { agencyRoutes } from "./agencyRoutes";
+import { authRoutes } from "./authRoutes";
+import { beneficiaryRoutes } from "./beneficiaryRoutes";
+import { donorRoutes } from "./donorRoutes";
+import { ProtectedRoute } from "./ProtectedRoute";
+import { publicRoutes } from "./publicRoutes";
 
-// Owned by the Foundation owner. Portal routes are open for now; ProtectedRoute
-// (role-based access) wraps them when authentication is added.
+// Owned by the Foundation owner.
+// Every portal is wrapped here, so a user can only open the portal that matches their role.
+// Portal devs keep editing only their own route file.
+function protect(route: RouteObject, role: UserRole): RouteObject {
+  return { ...route, element: <ProtectedRoute role={role}>{route.element}</ProtectedRoute> };
+}
+
 export const router = createBrowserRouter([
   publicRoutes,
-  donorRoutes,
-  beneficiaryRoutes,
-  agencyRoutes,
-  adminRoutes,
+  ...authRoutes,
+  protect(donorRoutes, "donor"),
+  protect(beneficiaryRoutes, "beneficiary"),
+  protect(agencyRoutes, "agency"),
+  protect(adminRoutes, "admin"),
 ]);

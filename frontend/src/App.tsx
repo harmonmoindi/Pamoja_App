@@ -1,7 +1,11 @@
 import { RouterProvider } from "react-router";
+import { AuthProvider } from "@/context/AuthContext";
 import { router } from "@/routes";
 
-// Authentication is added later: wrap <RouterProvider> in <AuthProvider> then.
 export default function App() {
-  return <RouterProvider router={router} />;
+  return (
+    <AuthProvider>
+      <RouterProvider router={router} />
+    </AuthProvider>
+  );
 }
