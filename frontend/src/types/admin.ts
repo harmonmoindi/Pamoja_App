@@ -11,7 +11,8 @@ export interface ChecklistItem {
 }
 
 export interface Agency {
-  id: string;
+  /** Number from the API (string in the old mock data) */
+  id: number | string;
   name: string;
   categories: Category[];
   counties: string[];
@@ -19,9 +20,13 @@ export interface Agency {
   /** ISO date the application was submitted */
   submittedOn: string;
   /** ISO date of the last update by the agency (shown for re-review) */
-  updatedOn?: string;
+  updatedOn?: string | null;
   /** Short note shown in the queue, e.g. "Information updated" */
-  note?: string;
+  note?: string | null;
+  /** Private review notes written by the admin */
+  adminNotes?: string | null;
+  /** Name of the user who owns the organization */
+  ownerName?: string | null;
   checklist: ChecklistItem[];
 }
 
@@ -30,7 +35,7 @@ export interface Agency {
 export type AuditKind = "request" | "delivery" | "pledge" | "agency" | "user" | "safety";
 
 export interface AuditEvent {
-  id: string;
+  id: number | string;
   kind: AuditKind;
   title: string;
   description: string;
@@ -84,4 +89,15 @@ export interface AdminMetric {
   label: string;
   value: string;
   note: string;
+}
+
+export interface TrustSafety {
+  score: number;
+  headline: string;
+  summary: string;
+}
+
+export interface AdminOverview {
+  metrics: AdminMetric[];
+  trustSafety: TrustSafety;
 }

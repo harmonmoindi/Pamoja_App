@@ -1,8 +1,10 @@
-import { useMemo, useState } from "react";
+import { useState } from "react";
 import { Search } from "lucide-react";
+import { ErrorNotice, Loading } from "@/components/ui/AsyncState";
 import { PageHead } from "@/components/ui/PageHead";
 import { AuditList } from "@/components/portal/AuditList";
-import { auditEvents } from "@/data/mock/auditEvents";
+import { useAsync, useDebounced } from "@/hooks/useAsync";
+import { listAudit } from "@/services/adminService";
 import { AuditKind } from "@/types/admin";
 
 const kindLabel: Record<AuditKind, string> = {
@@ -17,22 +19,18 @@ const kindLabel: Record<AuditKind, string> = {
 export default function AuditActivity() {
   const [query, setQuery] = useState("");
   const [kind, setKind] = useState<"all" | AuditKind>("all");
+  const q = useDebounced(query);
 
-  const visible = useMemo(() => {
-    const q = query.trim().toLowerCase();
-    return auditEvents.filter(
-      (e) =>
-        (kind === "all" || e.kind === kind) &&
-        (e.title.toLowerCase().includes(q) ||
-          e.description.toLowerCase().includes(q) ||
-          e.actor.toLowerCase().includes(q)),
-    );
-  }, [query, kind]);
+  const { data, loading, error, reload } = useAsync(
+    () => listAudit({ q: q || undefined, kind: kind === "all" ? undefined : kind, perPage: 100 }),
+    [q, kind],
+  );
+  const events = data?.items ?? [];
 
   return (
     <>
       <PageHead
-        eyebrow="Demonstration workspace"
+        eyebrow="Platform administration"
         title="Audit activity"
         description="A recorded timeline of important platform actions."
       />
@@ -57,14 +55,15 @@ export default function AuditActivity() {
           </select>
         </div>
 
-        {visible.length > 0 ? (
-          <AuditList events={visible} />
-        ) : (
-          <p style={{ padding: "18px 4px" }}>No activity matches your search.</p>
+        {error && <ErrorNotice message={error} onRetry={reload} />}
+        {!data && loading && <Loading label="Loading activity…" />}
+        {data && events.length > 0 && <AuditList events={events} />}
+        {data && events.length === 0 && <p style={{ padding: "18px 4px" }}>No activity matches your search.</p>}
+        {data && (
+          <p style={{ marginTop: 12, color: "var(--muted)", fontSize: 11 }}>
+            Showing {events.length} of {data.total} events
+          </p>
         )}
-        <p style={{ marginTop: 12, color: "var(--muted)", fontSize: 11 }}>
-          Showing {visible.length} of {auditEvents.length} events
-        </p>
       </div>
     </>
   );
