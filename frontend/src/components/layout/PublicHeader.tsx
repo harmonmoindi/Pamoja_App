@@ -3,6 +3,7 @@ import { Link } from "react-router";
 import { ArrowRight, Menu, X } from "lucide-react";
 import { Logo } from "@/components/ui/Logo";
 import { Button } from "@/components/ui/Button";
+import { dashboardPath, useAuth } from "@/context/AuthContext";
 
 const links: [string, string][] = [
   ["Home", "/"],
@@ -16,6 +17,8 @@ const links: [string, string][] = [
 
 export function PublicHeader() {
   const [open, setOpen] = useState(false);
+  const { user, logout } = useAuth();
+
   return (
     <header className="public-header">
       <div className="container nav-wrap">
@@ -30,13 +33,25 @@ export function PublicHeader() {
             </Link>
           ))}
           <div className="nav-actions">
-            {/* Sign in / Get started pages arrive with authentication. */}
-            <Button to="/signin" variant="ghost">
-              Sign in
-            </Button>
-            <Button to="/register">
-              Get started <ArrowRight size={16} />
-            </Button>
+            {user ? (
+              <>
+                <Button to={dashboardPath(user.role)} variant="ghost">
+                  My dashboard
+                </Button>
+                <Button variant="outline" onClick={logout}>
+                  Sign out
+                </Button>
+              </>
+            ) : (
+              <>
+                <Button to="/signin" variant="ghost">
+                  Sign in
+                </Button>
+                <Button to="/register">
+                  Get started <ArrowRight size={16} />
+                </Button>
+              </>
+            )}
           </div>
         </nav>
       </div>

@@ -10,7 +10,7 @@ from datetime import datetime
 from sqlalchemy import select
 
 from app.extensions import db
-from app.models.organization import Organization
+from app.models.organization import CHECKLIST_ITEMS, Organization
 from app.models.user import User
 
 # name, email, role, status, county, joined, last active
@@ -27,16 +27,22 @@ USERS = [
     ("Pamoja Admin", "admin@example.org", "admin", "active", "Nairobi County", "2026-06-01", "2026-11-18"),
 ]
 
-# name, categories, counties, status, note, submitted, owner email
+T, F = True, False
+
+# name, categories, counties, status, note, submitted, owner email, checklist ticks (4 items)
 AGENCIES = [
-    ("Community Health Access Kenya", ["Healthcare"], ["Nairobi County", "Kiambu County"], "pending", None, "2026-11-15", "mercy.njeri@example.org"),
-    ("Northern Learning Initiative", ["Education", "Community Support"], ["Turkana County", "Marsabit County"], "pending", None, "2026-11-13", None),
-    ("Lake Region Relief Network", ["Shelter", "Food Security"], ["Kisumu County", "Homa Bay County"], "re-review", "Information updated", "2026-11-10", "faith.achieng@example.org"),
-    ("Kitui Health Outreach", ["Healthcare"], ["Kitui County"], "more-info", "Awaiting safeguarding contact", "2026-11-06", None),
-    ("Pamoja Demo Education Partner", ["Education"], ["Turkana County"], "verified", None, "2026-08-21", "daniel.mutua@example.org"),
-    ("Pamoja Demo Resilience Partner", ["Food Security", "Shelter"], ["Marsabit County", "Garissa County"], "verified", None, "2026-09-02", None),
-    ("Garissa Community Support Trust", ["Community Support", "Food Security"], ["Garissa County"], "verified", None, "2026-09-19", None),
+    ("Community Health Access Kenya", ["Healthcare"], ["Nairobi County", "Kiambu County"], "pending", None, "2026-11-15", "mercy.njeri@example.org", [T, T, T, F]),
+    ("Northern Learning Initiative", ["Education", "Community Support"], ["Turkana County", "Marsabit County"], "pending", None, "2026-11-13", None, [T, T, F, F]),
+    ("Lake Region Relief Network", ["Shelter", "Food Security"], ["Kisumu County", "Homa Bay County"], "re-review", "Information updated", "2026-11-10", "faith.achieng@example.org", [T, T, T, T]),
+    ("Kitui Health Outreach", ["Healthcare"], ["Kitui County"], "more-info", "Awaiting safeguarding contact", "2026-11-06", None, [T, T, T, F]),
+    ("Pamoja Demo Education Partner", ["Education"], ["Turkana County"], "verified", None, "2026-08-21", "daniel.mutua@example.org", [T, T, T, T]),
+    ("Pamoja Demo Resilience Partner", ["Food Security", "Shelter"], ["Marsabit County", "Garissa County"], "verified", None, "2026-09-02", None, [T, T, T, T]),
+    ("Garissa Community Support Trust", ["Community Support", "Food Security"], ["Garissa County"], "verified", None, "2026-09-19", None, [T, T, T, T]),
 ]
+
+
+def _checklist(ticks):
+    return [{"label": label, "done": done} for label, done in zip(CHECKLIST_ITEMS, ticks)]
 
 
 def run():
@@ -53,11 +59,15 @@ def run():
         db.session.add(user)
     db.session.flush()
 
-    for name, categories, counties, status, note, submitted, owner_email in AGENCIES:
-        if db.session.scalar(select(Organization).where(Organization.name == name)):
+    for name, categories, counties, status, note, submitted, owner_email, ticks in AGENCIES:
+        existing = db.session.scalar(select(Organization).where(Organization.name == name))
+        if existing:
+            if existing.checklist is None:  # seeded before the review checklist existed
+                existing.checklist = _checklist(ticks)
             continue
         owner = db.session.scalar(select(User).where(User.email == owner_email)) if owner_email else None
         db.session.add(Organization(
             name=name, categories=categories, counties=counties, verification_status=status, note=note,
             submitted_at=datetime.fromisoformat(submitted), owner_id=owner.id if owner else None,
+            checklist=_checklist(ticks),
         ))

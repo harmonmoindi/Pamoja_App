@@ -1,7 +1,8 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useSearchParams } from "react-router";
 import { Check, Search } from "lucide-react";
 import { Button } from "@/components/ui/Button";
+import { ErrorNotice, Loading } from "@/components/ui/AsyncState";
 import { Modal } from "@/components/ui/Modal";
 import { PageHead } from "@/components/ui/PageHead";
 import { Status } from "@/components/ui/Status";
@@ -11,73 +12,108 @@ import {
   verificationLabel,
   verificationTone,
 } from "@/components/portal/AgencyVerificationList";
-import { agencies } from "@/data/mock/agencies";
+import { useAsync, useDebounced } from "@/hooks/useAsync";
+import { errorMessage } from "@/lib/errors";
+import { decideAgency, listAgencies, updateAgency } from "@/services/adminService";
 import { Agency, VerificationStatus } from "@/types/admin";
 import { formatDate } from "@/utils/format";
 
 type Filter = "all" | VerificationStatus;
 
 export default function AgencyVerification() {
-  // Local copy so Approve / Request more information work in the demo.
-  // The back-end replaces this with real API calls later.
-  const [items, setItems] = useState<Agency[]>(agencies);
   const [params] = useSearchParams();
   const [query, setQuery] = useState("");
   const [filter, setFilter] = useState<Filter>("all");
-  const [notes, setNotes] = useState<Record<string, string>>({});
+  const [notes, setNotes] = useState("");
+  const [busy, setBusy] = useState(false);
+  const [actionError, setActionError] = useState("");
   const [modal, setModal] = useState<{ title: string; message: string } | null>(null);
   const detailRef = useRef<HTMLElement>(null);
+  const q = useDebounced(query);
 
-  // Opened from the dashboard as /admin/verification?agency=ag-001
-  const selectedId = params.get("agency");
-  const selected = items.find((a) => a.id === selectedId) ?? items.find((a) => a.status !== "verified") ?? items[0];
+  const { data, setData, loading, error, reload } = useAsync(
+    () => listAgencies({ q: q || undefined, status: filter === "all" ? undefined : filter, perPage: 100 }),
+    [q, filter],
+  );
+  const agencies = data?.items ?? [];
+
+  // Opened from the dashboard as /admin/verification?agency=12
+  const selectedId = Number(params.get("agency")) || null;
+  const selected: Agency | undefined =
+    agencies.find((a) => a.id === selectedId) ?? agencies.find((a) => a.status !== "verified") ?? agencies[0];
 
   useEffect(() => {
     if (selectedId) detailRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
-  }, [selectedId]);
+  }, [selectedId, data]);
 
-  const visible = useMemo(
-    () =>
-      items.filter(
-        (a) =>
-          (filter === "all" || a.status === filter) &&
-          a.name.toLowerCase().includes(query.trim().toLowerCase()),
-      ),
-    [items, filter, query],
-  );
+  // Show the saved notes of whichever agency is selected
+  useEffect(() => {
+    setNotes(selected?.adminNotes ?? "");
+    setActionError("");
+  }, [selected?.id]);
 
-  const update = (id: string, changes: Partial<Agency>) =>
-    setItems((prev) => prev.map((a) => (a.id === id ? { ...a, ...changes } : a)));
+  const replaceAgency = (updated: Agency) =>
+    setData((prev) => (prev ? { ...prev, items: prev.items.map((a) => (a.id === updated.id ? updated : a)) } : prev));
+
+  async function run(task: () => Promise<{ agency: Agency }>, onDone?: () => void) {
+    setActionError("");
+    setBusy(true);
+    try {
+      const { agency } = await task();
+      replaceAgency(agency);
+      onDone?.();
+    } catch (err) {
+      setActionError(errorMessage(err));
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  const editable = selected !== undefined && selected.status !== "verified";
+  const allChecked = selected?.checklist.every((c) => c.done) ?? false;
 
   const toggleItem = (index: number) => {
-    if (selected.status === "verified") return;
-    update(selected.id, {
-      checklist: selected.checklist.map((c, i) => (i === index ? { ...c, done: !c.done } : c)),
-    });
+    if (!selected || !editable || busy) return;
+    void run(() =>
+      updateAgency(selected.id, {
+        checklist: selected.checklist.map((c, i) => (i === index ? { ...c, done: !c.done } : c)),
+      }),
+    );
   };
 
-  const allChecked = selected.checklist.every((c) => c.done);
+  const saveNotes = () => {
+    if (!selected || !editable || notes === (selected.adminNotes ?? "")) return;
+    void run(() => updateAgency(selected.id, { adminNotes: notes }));
+  };
 
   const requestInfo = () => {
-    update(selected.id, { status: "more-info", note: "Information requested" });
-    setModal({
-      title: "Information requested",
-      message: `A request for more information was recorded for ${selected.name}. (Demonstration only: no message is sent.)`,
-    });
+    if (!selected) return;
+    void run(
+      () => decideAgency(selected.id, "request-info", notes),
+      () =>
+        setModal({
+          title: "Information requested",
+          message: `${selected.name} has been asked for more information and was notified.`,
+        }),
+    );
   };
 
   const approve = () => {
-    update(selected.id, { status: "verified", note: undefined });
-    setModal({
-      title: "Agency approved",
-      message: `${selected.name} is now a verified agency and can publish needs and manage deliveries.`,
-    });
+    if (!selected) return;
+    void run(
+      () => decideAgency(selected.id, "approve", notes),
+      () =>
+        setModal({
+          title: "Agency approved",
+          message: `${selected.name} is now a verified agency and its owner was notified.`,
+        }),
+    );
   };
 
   return (
     <>
       <PageHead
-        eyebrow="Demonstration workspace"
+        eyebrow="Platform administration"
         title="Agency verification"
         description="Review organization applications and verification evidence."
       />
@@ -101,71 +137,77 @@ export default function AgencyVerification() {
             ))}
           </select>
         </div>
-        {visible.length > 0 ? (
-          <AgencyVerificationList agencies={visible} />
-        ) : (
-          <p style={{ padding: "18px 4px" }}>No agencies match your search.</p>
-        )}
+
+        {error && <ErrorNotice message={error} onRetry={reload} />}
+        {!data && loading && <Loading label="Loading agencies…" />}
+        {data && agencies.length > 0 && <AgencyVerificationList agencies={agencies} />}
+        {data && agencies.length === 0 && <p style={{ padding: "18px 4px" }}>No agencies match your search.</p>}
       </div>
 
-      <section className="panel" ref={detailRef} style={{ marginTop: 20 }}>
-        <div className="verification-detail">
-          <div>
-            <span className="org-avatar large">{selected.name[0]}</span>
-            <h2>{selected.name}</h2>
-            <p>{shortCounties(selected.counties)} Counties</p>
-            <p>{selected.categories.join(", ")}</p>
-            <p>Submitted {formatDate(selected.submittedOn)}</p>
-            <Status tone={verificationTone[selected.status]}>{verificationLabel[selected.status]}</Status>
-          </div>
+      {selected && (
+        <section className="panel" ref={detailRef} style={{ marginTop: 20 }}>
+          <div className="verification-detail">
+            <div>
+              <span className="org-avatar large">{selected.name[0]}</span>
+              <h2>{selected.name}</h2>
+              <p>{shortCounties(selected.counties)} Counties</p>
+              <p>{selected.categories.join(", ")}</p>
+              <p>Submitted {formatDate(selected.submittedOn)}</p>
+              {selected.ownerName && <p>Contact: {selected.ownerName}</p>}
+              <Status tone={verificationTone[selected.status]}>{verificationLabel[selected.status]}</Status>
+            </div>
 
-          <div className="checklist">
-            <h3>Review checklist</h3>
-            {selected.checklist.map((item, i) => (
-              <label
-                key={item.label}
-                role="checkbox"
-                aria-checked={item.done}
-                tabIndex={0}
-                onClick={() => toggleItem(i)}
-                onKeyDown={(e) => {
-                  if (e.key === " " || e.key === "Enter") {
-                    e.preventDefault();
-                    toggleItem(i);
-                  }
-                }}
-              >
-                <span className={item.done ? "checked" : ""}>{item.done && <Check />}</span>
-                {item.label}
-              </label>
-            ))}
-
-            {selected.status !== "verified" && (
-              <>
-                <label>
-                  Administrative notes
-                  <textarea
-                    placeholder="Add private review notes..."
-                    value={notes[selected.id] ?? ""}
-                    onChange={(e) => setNotes({ ...notes, [selected.id]: e.target.value })}
-                  />
+            <div className="checklist">
+              <h3>Review checklist</h3>
+              {selected.checklist.map((item, i) => (
+                <label
+                  key={item.label}
+                  role="checkbox"
+                  aria-checked={item.done}
+                  tabIndex={0}
+                  onClick={() => toggleItem(i)}
+                  onKeyDown={(e) => {
+                    if (e.key === " " || e.key === "Enter") {
+                      e.preventDefault();
+                      toggleItem(i);
+                    }
+                  }}
+                >
+                  <span className={item.done ? "checked" : ""}>{item.done && <Check />}</span>
+                  {item.label}
                 </label>
-                {!allChecked && (
-                  <p>Complete every checklist item before approving, or request more information.</p>
-                )}
-                <div>
-                  <Button variant="outline" onClick={requestInfo}>
-                    Request more information
-                  </Button>
-                  <Button onClick={approve} disabled={!allChecked}>
-                    Approve agency
-                  </Button>
-                </div>
-              </>
-            )}
+              ))}
+
+              {actionError && <ErrorNotice message={actionError} />}
+
+              {editable && (
+                <>
+                  <label>
+                    Administrative notes
+                    <textarea
+                      placeholder="Add private review notes..."
+                      value={notes}
+                      onChange={(e) => setNotes(e.target.value)}
+                      onBlur={saveNotes}
+                    />
+                  </label>
+                  {!allChecked && (
+                    <p>Complete every checklist item before approving, or request more information.</p>
+                  )}
+                  <div>
+                    <Button variant="outline" onClick={requestInfo} disabled={busy}>
+                      Request more information
+                    </Button>
+                    <Button onClick={approve} disabled={busy || !allChecked}>
+                      Approve agency
+                    </Button>
+                  </div>
+                </>
+              )}
+            </div>
           </div>
-        </div>
-      </section>
+        </section>
+      )}
 
       <Modal open={modal !== null} onClose={() => setModal(null)} title={modal?.title ?? ""}>
         <p>{modal?.message}</p>

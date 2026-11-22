@@ -1,14 +1,18 @@
 import { useState } from "react";
 import { Outlet, useLocation } from "react-router";
-import { Bell, ChevronRight, Menu } from "lucide-react";
+import { Bell, ChevronRight, Clock3, Menu } from "lucide-react";
+import { useAuth } from "@/context/AuthContext";
 import { PortalRole } from "@/data/constants/navigation";
 import { PortalSidebar } from "./PortalSidebar";
 
 export function PortalLayout({ role }: { role: PortalRole }) {
   const [open, setOpen] = useState(false);
   const location = useLocation();
-  // Replace with the signed-in user's name once authentication is added.
-  const name = "Pamoja member";
+  const { user } = useAuth();
+
+  const name = user?.name ?? "Pamoja member";
+  const pending = user?.status === "pending";
+
   return (
     <div className="portal-shell">
       <PortalSidebar role={role} open={open} onClose={() => setOpen(false)} />
@@ -29,11 +33,23 @@ export function PortalLayout({ role }: { role: PortalRole }) {
             <span className="avatar">{name.slice(0, 1)}</span>
             <div>
               <b>{name}</b>
-              <small>{role === "agency" ? "Verified demonstration organization" : `${role} demo account`}</small>
+              <small>{pending ? "Pending verification" : `${role} account`}</small>
             </div>
           </div>
         </header>
         <main className="portal-content">
+          {pending && (
+            <div className="pending-verification" style={{ marginBottom: 16 }}>
+              <Clock3 />
+              <div>
+                <b>Pending verification</b>
+                <small>
+                  An administrator still has to review and approve this account. Some actions may be
+                  limited until then.
+                </small>
+              </div>
+            </div>
+          )}
           <Outlet />
         </main>
       </div>

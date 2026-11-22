@@ -16,9 +16,6 @@ export const publicRoutes: RouteObject = {
     { path: "situation", element: page("public/Situation") },
     { path: "about", element: page("public/About") },
     { path: "pledge/:id", element: page("donor/PledgePage") },
-    // Authentication pages: empty until the auth phase.
-    { path: "signin", element: page("auth/SignIn") },
-    { path: "register", element: page("auth/Register") },
     { path: "*", element: page("NotFound") },
   ],
 };
