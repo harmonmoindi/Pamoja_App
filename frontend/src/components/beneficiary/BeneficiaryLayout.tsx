@@ -1,13 +1,13 @@
 import { useState } from "react";
 import { Link, NavLink, Outlet } from "react-router";
 import {
-  ArrowRight,
+  ArrowLeftRight,
+  ArrowUpRight,
   Bell,
   Check,
   Clock,
-  ExternalLink,
+  Home,
   LayoutDashboard,
-  LayoutGrid,
   List,
   Menu,
   Plus,
@@ -62,10 +62,10 @@ export function BeneficiaryLayout() {
             </div>
             <div className="bn-nav-actions">
               <Link className="bn-signin" to="/signin">
-                Sign in
+                Sign In
               </Link>
               <Link className="bn-started" to="/register">
-                Get Started <ArrowRight size={16} />
+                Get Started <ArrowUpRight size={16} />
               </Link>
             </div>
           </nav>
@@ -80,11 +80,7 @@ export function BeneficiaryLayout() {
                 <X size={18} />
               </button>
             </div>
-            <p className="bn-role">
-              Beneficiary workspace
-              <br />
-              demo
-            </p>
+            <p className="bn-role">Beneficiary workspace demo</p>
             <nav className="bn-navlist" aria-label="Beneficiary workspace">
               {workspaceLinks.map(([label, href, Icon]) => (
                 <NavLink key={label} to={href} end={href === "/beneficiary/dashboard"} onClick={close}>
@@ -95,11 +91,11 @@ export function BeneficiaryLayout() {
             </nav>
             <div className="bn-sidefoot">
               <NavLink to="/beneficiary/workspace" onClick={close}>
-                <LayoutGrid size={18} />
+                <ArrowLeftRight size={18} />
                 Switch workspace
               </NavLink>
               <Link to="/" onClick={close}>
-                <ExternalLink size={18} />
+                <Home size={18} />
                 Public website
               </Link>
             </div>
@@ -115,7 +111,7 @@ export function BeneficiaryLayout() {
           <div className="bn-main">
             <Outlet />
             <p className="bn-footnote">
-              Pamoja concept prototype · Fictional data. Local browser storage. No real authentication or donations.
+              Pamoja concept prototype · Fictional data · Local browser storage · No real authentication or donations.
             </p>
           </div>
         </div>

@@ -2,6 +2,7 @@ import { Link, useParams } from "react-router";
 import { BeneficiaryPage } from "@/components/beneficiary/BeneficiaryPage";
 import { ProcessSteps } from "@/components/beneficiary/ProcessSteps";
 import { useBeneficiaryRequests } from "@/components/beneficiary/BeneficiaryRequests";
+import { trackingStepsFor } from "@/data/mock/beneficiaryRequests";
 
 export default function RequestDetail() {
   const { reference = "" } = useParams();
@@ -41,8 +42,22 @@ export default function RequestDetail() {
               <dd>{request.location}</dd>
             </div>
             <div>
+              <dt>Resource</dt>
+              <dd>
+                {request.quantity} · {request.resource}
+              </dd>
+            </div>
+            <div>
+              <dt>Urgency</dt>
+              <dd>{request.urgency}</dd>
+            </div>
+            <div>
               <dt>Reference</dt>
               <dd>{request.reference}</dd>
+            </div>
+            <div>
+              <dt>Submitted</dt>
+              <dd>{request.submittedOn}</dd>
             </div>
           </dl>
           <p>{request.summary}</p>
@@ -55,8 +70,8 @@ export default function RequestDetail() {
           {request.status === "under review" && <p className="bn-note">Waiting for an agency decision in this demonstration.</p>}
         </section>
         <section className="bn-panel bn-process">
-          <h2>How the process works</h2>
-          <ProcessSteps />
+          <h2>Assistance journey</h2>
+          <ProcessSteps steps={trackingStepsFor(request.status)} />
           <Link className="bn-secondary block" to="/beneficiary/tracking">
             View full workflow
           </Link>

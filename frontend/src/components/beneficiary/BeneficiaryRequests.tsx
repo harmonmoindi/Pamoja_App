@@ -6,18 +6,21 @@ import {
   seedBeneficiaryRequests,
 } from "@/data/mock/beneficiaryRequests";
 
-const STORAGE_KEY = "pamoja.beneficiary.requests.v1";
+const STORAGE_KEY = "pamoja.beneficiary.requests.v2";
 
 type NewRequestInput = {
   title: string;
   category: string;
   location: string;
   summary: string;
+  resource: string;
+  quantity: number;
+  urgency: BeneficiaryRequest["urgency"];
 };
 
 type BeneficiaryRequestsValue = {
   requests: BeneficiaryRequest[];
-  addRequest: (input: NewRequestInput) => void;
+  addRequest: (input: NewRequestInput) => BeneficiaryRequest;
   confirmReceipt: (reference: string) => void;
 };
 
@@ -25,6 +28,10 @@ const BeneficiaryRequestsContext = createContext<BeneficiaryRequestsValue | null
 
 function isStatus(value: unknown): value is BeneficiaryStatus {
   return value === "under review" || value === "approved" || value === "fulfilled";
+}
+
+function isUrgency(value: unknown): value is BeneficiaryRequest["urgency"] {
+  return value === "Low" || value === "Medium" || value === "High";
 }
 
 function isRequest(value: unknown): value is BeneficiaryRequest {
@@ -36,7 +43,10 @@ function isRequest(value: unknown): value is BeneficiaryRequest {
     typeof request.category === "string" &&
     typeof request.location === "string" &&
     typeof request.summary === "string" &&
+    typeof request.resource === "string" &&
+    typeof request.quantity === "number" &&
     typeof request.submittedOn === "string" &&
+    isUrgency(request.urgency) &&
     isStatus(request.status)
   );
 }
@@ -71,23 +81,26 @@ export function BeneficiaryRequestsProvider({ children }: { children: ReactNode 
   const [requests, setRequests] = useState<BeneficiaryRequest[]>(readRequests);
 
   const addRequest = useCallback((input: NewRequestInput) => {
+    const created: BeneficiaryRequest = {
+      reference: nextReference(requests),
+      title: input.title,
+      category: input.category,
+      location: input.location,
+      summary: input.summary,
+      resource: input.resource,
+      quantity: input.quantity,
+      urgency: input.urgency,
+      status: "under review",
+      submittedOn: formatToday(),
+    };
     setRequests((current) => {
-      const next = [
-        {
-          reference: nextReference(current),
-          title: input.title,
-          category: input.category,
-          location: input.location,
-          summary: input.summary,
-          status: "under review" as const,
-          submittedOn: formatToday(),
-        },
-        ...current,
-      ];
+      const next = [{ ...created, reference: nextReference(current) }, ...current];
+      created.reference = next[0].reference;
       saveRequests(next);
       return next;
     });
-  }, []);
+    return created;
+  }, [requests]);
 
   const confirmReceipt = useCallback((reference: string) => {
     setRequests((current) => {
