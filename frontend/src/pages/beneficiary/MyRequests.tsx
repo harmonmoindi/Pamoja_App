@@ -10,10 +10,10 @@ export default function MyRequests() {
   return (
     <BeneficiaryPage
       title="My requests"
-      description="Every demonstration request saved in this browser, from the newest submission."
+      description="View all demonstration assistance requests."
       action={
         <Link className="bn-primary" to="/beneficiary/request">
-          <Plus size={16} /> New assistance request
+          <Plus size={16} /> New request
         </Link>
       }
     >

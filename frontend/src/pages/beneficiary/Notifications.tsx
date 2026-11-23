@@ -1,40 +1,77 @@
-import { Bell } from "lucide-react";
+import { useMemo, useState } from "react";
+import { AlertTriangle } from "lucide-react";
 import { Link } from "react-router";
 import { BeneficiaryPage } from "@/components/beneficiary/BeneficiaryPage";
 import { useBeneficiaryRequests } from "@/components/beneficiary/BeneficiaryRequests";
 
+type Note = {
+  id: string;
+  title: string;
+  body: string;
+  to: string;
+  unread: boolean;
+};
+
 export default function Notifications() {
   const { requests } = useBeneficiaryRequests();
-  const notes = [
-    {
-      id: "prototype",
-      title: "Demonstration workspace",
-      body: "Updates on this page are fictional and stay in this browser. No agency has been notified.",
-      time: "Today",
-      to: "/beneficiary/dashboard",
-    },
-    ...requests.slice(0, 5).map((request) => ({
-      id: request.reference,
-      title: `${request.reference} is ${request.status}`,
-      body: `${request.title} in ${request.location} is recorded as ${request.status}.`,
-      time: request.submittedOn,
-      to: `/beneficiary/requests/${request.reference}`,
-    })),
-  ];
+  const seed = useMemo<Note[]>(
+    () => [
+      {
+        id: "welcome",
+        title: "Welcome to your Pamoja demonstration workspace",
+        body: "Fictional notification",
+        to: "/beneficiary/dashboard",
+        unread: true,
+      },
+      {
+        id: "privacy",
+        title: "Demo reminder: do not enter real personal data",
+        body: "Fictional notification",
+        to: "/beneficiary/request",
+        unread: true,
+      },
+      {
+        id: "tracking",
+        title: requests[0]
+          ? `${requests[0].reference} is recorded as ${requests[0].status}`
+          : "Request tracking is ready in this workspace",
+        body: requests[0]
+          ? `${requests[0].title} · Fictional notification`
+          : "Fictional notification",
+        to: requests[0] ? `/beneficiary/requests/${requests[0].reference}` : "/beneficiary/tracking",
+        unread: false,
+      },
+    ],
+    [requests],
+  );
+  const [notes, setNotes] = useState<Note[] | null>(null);
+  const visible = notes ?? seed;
+
+  const markAllRead = () => {
+    setNotes(visible.map((note) => ({ ...note, unread: false })));
+  };
 
   return (
-    <BeneficiaryPage title="Notifications" description="Fictional updates for the requests in this demonstration workspace.">
+    <BeneficiaryPage
+      title="Notifications"
+      description="Demonstration activity and updates from across the platform."
+      action={
+        <button className="bn-secondary" type="button" onClick={markAllRead}>
+          Mark all read
+        </button>
+      }
+    >
       <ul className="bn-notes bn-section">
-        {notes.map((note) => (
-          <li key={note.id}>
+        {visible.map((note) => (
+          <li key={note.id} className={note.unread ? "unread" : ""}>
             <span className="bn-note-icon" aria-hidden="true">
-              <Bell size={16} />
+              <AlertTriangle size={16} />
             </span>
             <div>
               <Link to={note.to}>{note.title}</Link>
               <p>{note.body}</p>
             </div>
-            <time>{note.time}</time>
+            {note.unread ? <i className="bn-unread" aria-label="Unread" /> : <span className="bn-read">Read</span>}
           </li>
         ))}
       </ul>
