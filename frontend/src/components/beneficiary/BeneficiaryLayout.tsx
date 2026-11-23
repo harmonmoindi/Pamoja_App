@@ -13,6 +13,7 @@ import {
   Plus,
   X,
 } from "lucide-react";
+import { dashboardPath, useAuth } from "@/context/AuthContext";
 import { BeneficiaryMark } from "./BeneficiaryMark";
 import { BeneficiaryRequestsProvider } from "./BeneficiaryRequests";
 
@@ -36,6 +37,7 @@ const workspaceLinks: [string, string, typeof LayoutDashboard][] = [
 
 export function BeneficiaryLayout() {
   const [open, setOpen] = useState(false);
+  const { user, logout } = useAuth();
   const close = () => setOpen(false);
 
   return (
@@ -61,12 +63,25 @@ export function BeneficiaryLayout() {
               ))}
             </div>
             <div className="bn-nav-actions">
-              <Link className="bn-signin" to="/signin">
-                Sign In
-              </Link>
-              <Link className="bn-started" to="/register">
-                Get Started <ArrowUpRight size={16} />
-              </Link>
+              {user ? (
+                <>
+                  <Link className="bn-signin" to={dashboardPath(user.role)}>
+                    My dashboard
+                  </Link>
+                  <button className="bn-started" type="button" onClick={logout}>
+                    Sign out
+                  </button>
+                </>
+              ) : (
+                <>
+                  <Link className="bn-signin" to="/signin">
+                    Sign In
+                  </Link>
+                  <Link className="bn-started" to="/register">
+                    Get Started <ArrowUpRight size={16} />
+                  </Link>
+                </>
+              )}
             </div>
           </nav>
         </header>
