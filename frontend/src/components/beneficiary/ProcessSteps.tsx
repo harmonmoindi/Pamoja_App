@@ -1,12 +1,18 @@
 import { Check } from "lucide-react";
-import { assistanceProcess } from "@/data/mock/beneficiaryRequests";
+import { AssistanceStep, TrackingStep, assistanceProcess } from "@/data/mock/beneficiaryRequests";
 
-export function ProcessSteps({ detailed = false }: { detailed?: boolean }) {
+type ProcessStepsProps = {
+  detailed?: boolean;
+  steps?: Array<AssistanceStep | TrackingStep>;
+};
+
+export function ProcessSteps({ detailed = false, steps = assistanceProcess }: ProcessStepsProps) {
   return (
     <ol className="bn-steps">
-      {assistanceProcess.map((step, index) => {
-        const next = assistanceProcess[index + 1];
+      {steps.map((step, index) => {
+        const next = steps[index + 1];
         const line = !next ? "none" : step.done && next.done ? "done" : "todo";
+        const copy = "body" in step && detailed ? step.body : step.detail;
         return (
           <li key={step.title} className={step.done ? "bn-step done" : "bn-step"}>
             <span className="bn-rail" aria-hidden="true">
@@ -15,7 +21,7 @@ export function ProcessSteps({ detailed = false }: { detailed?: boolean }) {
             </span>
             <div className="bn-step-copy">
               <h3>{step.title}</h3>
-              <p>{detailed ? step.body : step.detail}</p>
+              <p>{copy}</p>
             </div>
           </li>
         );

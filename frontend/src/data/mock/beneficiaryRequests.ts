@@ -7,6 +7,9 @@ export type BeneficiaryRequest = {
   location: string;
   status: BeneficiaryStatus;
   summary: string;
+  resource: string;
+  quantity: number;
+  urgency: "Low" | "Medium" | "High";
   submittedOn: string;
 };
 
@@ -17,8 +20,13 @@ export type AssistanceStep = {
   body: string;
 };
 
-// Matches the concept-prototype dashboard: six approved demonstration requests,
-// with the first four shown as the recent list.
+export type TrackingStep = {
+  title: string;
+  detail: string;
+  done: boolean;
+};
+
+// Matches the concept-prototype screens: six approved demonstration requests.
 export const seedBeneficiaryRequests: BeneficiaryRequest[] = [
   {
     reference: "REQ-1006",
@@ -27,6 +35,9 @@ export const seedBeneficiaryRequests: BeneficiaryRequest[] = [
     location: "Nakuru",
     status: "approved",
     summary: "Seedlings, hand tools, and soil for a fictional community garden in Nakuru.",
+    resource: "Garden starter kits",
+    quantity: 40,
+    urgency: "Medium",
     submittedOn: "18 Nov 2026",
   },
   {
@@ -36,6 +47,9 @@ export const seedBeneficiaryRequests: BeneficiaryRequest[] = [
     location: "Kitui",
     status: "approved",
     summary: "Exercise books and classroom kits for a fictional school request in Kitui.",
+    resource: "Learning kits",
+    quantity: 120,
+    urgency: "Medium",
     submittedOn: "16 Nov 2026",
   },
   {
@@ -45,6 +59,9 @@ export const seedBeneficiaryRequests: BeneficiaryRequest[] = [
     location: "Kisumu",
     status: "approved",
     summary: "Temporary shelter materials recorded for a fictional response in Kisumu.",
+    resource: "Shelter kits",
+    quantity: 25,
+    urgency: "High",
     submittedOn: "14 Nov 2026",
   },
   {
@@ -54,24 +71,33 @@ export const seedBeneficiaryRequests: BeneficiaryRequest[] = [
     location: "Nairobi",
     status: "approved",
     summary: "Basic clinic supplies for a fictional community outreach day in Nairobi.",
+    resource: "Medical kits",
+    quantity: 60,
+    urgency: "High",
     submittedOn: "12 Nov 2026",
   },
   {
     reference: "REQ-1002",
-    title: "Clean water storage containers",
+    title: "Food assistance for vulnerable households",
     category: "Food Security",
     location: "Garissa",
     status: "approved",
-    summary: "Household water containers for a fictional request in Garissa.",
+    summary: "Household food packages for a fictional request in Garissa.",
+    resource: "Food parcels",
+    quantity: 80,
+    urgency: "High",
     submittedOn: "9 Nov 2026",
   },
   {
     reference: "REQ-1001",
-    title: "Household food packages",
-    category: "Food Security",
+    title: "School supplies for students in Turkana",
+    category: "Education",
     location: "Turkana",
     status: "approved",
-    summary: "Food parcels recorded for a fictional household request in Turkana.",
+    summary: "Help a community learning centre prepare 50 students for the new term with essential school materials.",
+    resource: "Exercise books",
+    quantity: 500,
+    urgency: "High",
     submittedOn: "6 Nov 2026",
   },
 ];
@@ -109,16 +135,33 @@ export const assistanceProcess: AssistanceStep[] = [
   },
 ];
 
+export const trackingJourney: TrackingStep[] = [
+  { title: "Request submitted", detail: "Completed in fictional scenario", done: true },
+  { title: "Agency review started", detail: "Completed in fictional scenario", done: true },
+  { title: "Assessment decision", detail: "Completed in fictional scenario", done: true },
+  { title: "Approved for discovery", detail: "Completed in fictional scenario", done: true },
+  { title: "Donor pledge recorded", detail: "Not yet completed", done: false },
+  { title: "Resources coordinated", detail: "Not yet completed", done: false },
+  { title: "Delivery confirmed", detail: "Not yet completed", done: false },
+];
+
 export const requestCategories = [
-  "Community Development",
   "Education",
-  "Shelter",
-  "Healthcare",
   "Food Security",
+  "Healthcare",
+  "Shelter",
+  "Community Development",
   "Community Support",
 ] as const;
 
-export const requestLocations = ["Nakuru", "Kitui", "Kisumu", "Nairobi", "Garissa", "Turkana", "Marsabit"] as const;
+export const requestUrgencies = ["Low", "Medium", "High"] as const;
+
+export const deliveryOutcomes = [
+  "Yes, everything was received",
+  "Partially received",
+  "Not received",
+  "Report a discrepancy",
+] as const;
 
 export function requestStats(requests: BeneficiaryRequest[]) {
   return {
@@ -135,4 +178,22 @@ export function nextReference(requests: BeneficiaryRequest[]) {
     return Number.isFinite(value) ? Math.max(highest, value) : highest;
   }, 1000);
   return `REQ-${max + 1}`;
+}
+
+export function deliveryLabel(request: BeneficiaryRequest, index: number) {
+  return `DEL-${String(index + 1).padStart(3, "0")} · ${request.resource}`;
+}
+
+export function trackingStepsFor(status: BeneficiaryStatus): TrackingStep[] {
+  if (status === "fulfilled") {
+    return trackingJourney.map((step) => ({ ...step, done: true, detail: "Completed in fictional scenario" }));
+  }
+  if (status === "under review") {
+    return trackingJourney.map((step, index) => ({
+      ...step,
+      done: index < 2,
+      detail: index < 2 ? "Completed in fictional scenario" : "Not yet completed",
+    }));
+  }
+  return trackingJourney;
 }
