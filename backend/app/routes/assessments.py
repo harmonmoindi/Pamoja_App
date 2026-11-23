@@ -76,3 +76,30 @@ def create_assessment(request_id):
     return jsonify({
         "assessment": AssessmentSchema().dump(assessment)
     }), 201
+
+@bp.get("/api/requests")
+@role_required("agency")
+def list_agency_requests():
+    from app.models.assistance_request import AssistanceRequest
+    from app.schemas.request_schema import AssistanceRequestSchema
+    from app.utils.pagination import paginate
+
+    user = get_current_user()
+
+    stmt = (
+        select(AssistanceRequest)
+        .join(
+            Organization,
+            AssistanceRequest.organization_id == Organization.id
+        )
+        .where(
+            Organization.owner_id == user.id
+        )
+        .order_by(
+            AssistanceRequest.created_at.desc()
+        )
+    )
+
+    return jsonify(
+        paginate(stmt, AssistanceRequestSchema())
+    )
