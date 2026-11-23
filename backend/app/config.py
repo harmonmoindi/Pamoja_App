@@ -6,6 +6,9 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
+DEV_SECRET = "dev-only-secret-key-change-me-before-deploy"
+DEV_JWT_SECRET = "dev-only-jwt-secret-key-change-me-before-deploy"
+
 
 def _database_url() -> str:
     url = os.getenv("DATABASE_URL", "postgresql://pamoja_user:your_password@localhost:5432/pamoja_db")
@@ -15,8 +18,9 @@ def _database_url() -> str:
 
 
 class Config:
-    SECRET_KEY = os.getenv("SECRET_KEY", "dev-only-secret-key-change-me-before-deploy")
-    JWT_SECRET_KEY = os.getenv("JWT_SECRET_KEY", "dev-only-jwt-secret-key-change-me-before-deploy")
+    PRODUCTION = False
+    SECRET_KEY = os.getenv("SECRET_KEY", DEV_SECRET)
+    JWT_SECRET_KEY = os.getenv("JWT_SECRET_KEY", DEV_JWT_SECRET)
     JWT_ACCESS_TOKEN_EXPIRES = timedelta(hours=int(os.getenv("JWT_EXPIRES_HOURS", "8")))
     SQLALCHEMY_DATABASE_URI = _database_url()
     SQLALCHEMY_TRACK_MODIFICATIONS = False
@@ -33,7 +37,16 @@ class TestingConfig(Config):
     JWT_ACCESS_TOKEN_EXPIRES = timedelta(minutes=5)
 
 
-configs = {"development": DevelopmentConfig, "testing": TestingConfig}
+class ProductionConfig(Config):
+    """Used on Render (APP_ENV=production)."""
+
+    PRODUCTION = True
+    DEBUG = False
+    # Neon puts idle databases to sleep: check a connection is alive before using it, and refresh them regularly.
+    SQLALCHEMY_ENGINE_OPTIONS = {"pool_pre_ping": True, "pool_recycle": 300}
+
+
+configs = {"development": DevelopmentConfig, "testing": TestingConfig, "production": ProductionConfig}
 
 
 def get_config(name: Optional[str] = None):
