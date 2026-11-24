@@ -15,6 +15,7 @@ export interface Donation {
   transactionCode?: string;
   status: DonationStatus;
   date: string;
+  createdAt: string;
 }
 
 export interface PaymentStatus {

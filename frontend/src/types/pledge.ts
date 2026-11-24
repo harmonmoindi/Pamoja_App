@@ -11,6 +11,8 @@ export interface Pledge {
   opportunityTitle: string;
   amount: number;
   date: string;
+  createdAt: string;
+  dueDate?: string;
   status: PledgeStatus;
   donorId: number;
   paymentMethod: string;

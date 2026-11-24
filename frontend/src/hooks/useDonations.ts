@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { donations as mockDonations } from "../data/mock/donations";
+import { mockDonations } from "../data/mock/donations";
 import type {
   Donation,
   DonationStatus,

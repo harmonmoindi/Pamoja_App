@@ -1,4 +1,3 @@
-
 import type { Donation } from "../../types/donation";
 
 interface PaymentStatusPanelProps {
@@ -9,15 +8,17 @@ export default function PaymentStatusPanel({
   donation,
 }: PaymentStatusPanelProps) {
   const statusStyles = {
-    completed: "bg-green-100 text-green-700",
-    pending: "bg-yellow-100 text-yellow-700",
-    failed: "bg-red-100 text-red-700",
+    Pending: "bg-yellow-100 text-yellow-700",
+    Processing: "bg-blue-100 text-blue-700",
+    Successful: "bg-green-100 text-green-700",
+    Failed: "bg-red-100 text-red-700",
   };
 
   const statusMessages = {
-    completed: "Your payment was successful.",
-    pending: "Your payment is being processed.",
-    failed: "Your payment could not be completed.",
+    Pending: "Your payment is being processed.",
+    Processing: "Your payment is being processed.",
+    Successful: "Your payment was successful.",
+    Failed: "Your payment could not be completed.",
   };
 
   const formatCurrency = (amount: number) => {
@@ -85,7 +86,7 @@ export default function PaymentStatusPanel({
           </span>
 
           <span className="text-right text-sm font-medium text-gray-900">
-            {donation.transactionId}
+            {donation.transactionCode}
           </span>
         </div>
 

@@ -13,6 +13,8 @@ const mockPledges: Pledge[] = [
 		status: "Fulfilled",
 		paymentMethod: "mpesa",
 		date: "2026-10-12",
+		createdAt: "2026-10-12",
+		dueDate: "2026-11-12",
 	},
 	{
 		id: 2,
@@ -24,6 +26,8 @@ const mockPledges: Pledge[] = [
 		status: "Pending",
 		paymentMethod: "mpesa",
 		date: "2026-11-05",
+		createdAt: "2026-11-05",
+		dueDate: "2026-12-05",
 	},
 	{
 		id: 3,
@@ -35,6 +39,8 @@ const mockPledges: Pledge[] = [
 		status: "Fulfilled",
 		paymentMethod: "mpesa",
 		date: "2026-09-28",
+		createdAt: "2026-09-28",
+		dueDate: "2026-10-28",
 	},
 ];
 

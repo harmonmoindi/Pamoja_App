@@ -12,6 +12,7 @@ export const mockDonations: Donation[] = [
     reference: "MPESA001234",
     transactionCode: "MPESA001234",
     date: "2026-11-01",
+    createdAt: "2026-11-01",
   },
   {
     id: 2,
@@ -24,6 +25,7 @@ export const mockDonations: Donation[] = [
     reference: "CARD001235",
     transactionCode: "CARD001235",
     date: "2026-11-03",
+    createdAt: "2026-11-03",
   },
   {
     id: 3,
@@ -36,6 +38,7 @@ export const mockDonations: Donation[] = [
     reference: "MPESA001236",
     transactionCode: "MPESA001236",
     date: "2026-11-05",
+    createdAt: "2026-11-05",
   },
   {
     id: 4,
@@ -48,6 +51,7 @@ export const mockDonations: Donation[] = [
     reference: "BANK001237",
     transactionCode: "BANK001237",
     date: "2026-11-08",
+    createdAt: "2026-11-08",
   },
   {
     id: 5,
@@ -60,5 +64,6 @@ export const mockDonations: Donation[] = [
     reference: "MPESA001238",
     transactionCode: "MPESA001238",
     date: "2026-11-10",
+    createdAt: "2026-11-10",
   },
 ];
