@@ -11,9 +11,21 @@ DEV_JWT_SECRET = "dev-only-jwt-secret-key-change-me-before-deploy"
 
 
 def _database_url() -> str:
-    url = os.getenv("DATABASE_URL", "postgresql://pamoja_user:your_password@localhost:5432/pamoja_db")
-    if url.startswith("postgres://"):  # some hosts still use the old prefix
+    url = os.getenv(
+        "DATABASE_URL",
+        "postgresql://pamoja_user:your_password@localhost:5432/pamoja_db",
+    )
+
+    if url.startswith("postgres://"):
         url = url.replace("postgres://", "postgresql://", 1)
+
+    if url.startswith("postgresql://"):
+        url = url.replace(
+            "postgresql://",
+            "postgresql+psycopg2://",
+            1,
+        )
+
     return url
 
 
