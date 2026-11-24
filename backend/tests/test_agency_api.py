@@ -269,3 +269,201 @@ def test_assessment_delivery_and_receipt_workflow(
 
     db.session.refresh(agency_data["request1"])
     assert agency_data["request1"].stage == "Confirmed"
+
+def test_successful_resource_allocation(client, login, agency_data):
+
+    request = agency_data["request1"]
+    inventory = agency_data["inventory"]
+
+    # Mark the request as assessed.
+    request.stage = "Assessed"
+    db.session.commit()
+
+    token = get_token(login, "agency1@example.org")
+
+    response = client.post(
+        "/api/matching/allocate",
+        json={
+            "requestId": request.id,
+            "resourceId": inventory.id,
+            "quantity": 10
+        },
+        headers=bearer(token)
+    )
+
+    assert response.status_code == 200
+
+    data = response.get_json()
+
+    assert data["allocatedQuantity"] == 10
+    assert data["totalAllocated"] == 20
+    assert data["remaining"] == 30
+    assert data["inventoryRemaining"] == 20
+    assert data["available"] == 15
+
+    db.session.refresh(request)
+    db.session.refresh(inventory)
+
+    assert request.allocated == 20
+    assert inventory.quantity == 20
+
+def test_allocation_rejects_insufficient_stock(
+    client, login, agency_data
+):
+
+    request = agency_data["request1"]
+    inventory = agency_data["inventory"]
+
+    request.stage = "Assessed"
+    db.session.commit()
+
+    token = get_token(login, "agency1@example.org")
+
+    response = client.post(
+        "/api/matching/allocate",
+        json={
+            "requestId": request.id,
+            "resourceId": inventory.id,
+            "quantity": 26
+        },
+        headers=bearer(token)
+    )
+
+    assert response.status_code == 409
+
+    db.session.refresh(request)
+    db.session.refresh(inventory)
+
+    assert request.allocated == 10
+    assert inventory.quantity == 30
+
+def test_allocation_rejects_unassessed_request(
+    client, login, agency_data
+):
+
+    request = agency_data["request1"]
+    inventory = agency_data["inventory"]
+
+    token = get_token(login, "agency1@example.org")
+
+    response = client.post(
+        "/api/matching/allocate",
+        json={
+            "requestId": request.id,
+            "resourceId": inventory.id,
+            "quantity": 5
+        },
+        headers=bearer(token)
+    )
+
+    assert response.status_code == 409
+
+    assert response.get_json()["error"]["code"] == (
+        "invalid_request_stage"
+    )
+
+def test_other_agency_cannot_allocate_resources(
+    client, login, agency_data
+):
+
+    request = agency_data["request1"]
+    inventory = agency_data["inventory"]
+
+    request.stage = "Assessed"
+    db.session.commit()
+
+    token = get_token(login, "agency2@example.org")
+
+    response = client.post(
+        "/api/matching/allocate",
+        json={
+            "requestId": request.id,
+            "resourceId": inventory.id,
+            "quantity": 5
+        },
+        headers=bearer(token)
+    )
+
+    assert response.status_code == 404
+
+def test_donor_cannot_allocate_resources(
+    client, login, agency_data
+):
+
+    request = agency_data["request1"]
+    inventory = agency_data["inventory"]
+
+    token = get_token(login, "donor@example.org")
+
+    response = client.post(
+        "/api/matching/allocate",
+        json={
+            "requestId": request.id,
+            "resourceId": inventory.id,
+            "quantity": 5
+        },
+        headers=bearer(token)
+    )
+
+    assert response.status_code == 403
+
+def test_allocation_rejects_invalid_quantity(
+    client, login, agency_data
+):
+
+    request = agency_data["request1"]
+    inventory = agency_data["inventory"]
+
+    request.stage = "Assessed"
+    db.session.commit()
+
+    token = get_token(login, "agency1@example.org")
+
+    response = client.post(
+        "/api/matching/allocate",
+        json={
+            "requestId": request.id,
+            "resourceId": inventory.id,
+            "quantity": 0
+        },
+        headers=bearer(token)
+    )
+
+    assert response.status_code == 400
+
+def test_fully_allocated_request_updates_stage(
+    client, login, agency_data
+):
+
+    request = agency_data["request1"]
+    inventory = agency_data["inventory"]
+
+    request.stage = "Assessed"
+    request.quantity = 30
+
+    db.session.commit()
+
+    token = get_token(login, "agency1@example.org")
+
+    response = client.post(
+        "/api/matching/allocate",
+        json={
+            "requestId": request.id,
+            "resourceId": inventory.id,
+            "quantity": 20
+        },
+        headers=bearer(token)
+    )
+
+    assert response.status_code == 200
+
+    data = response.get_json()
+
+    assert data["remaining"] == 0
+    assert data["totalAllocated"] == 30
+
+    db.session.refresh(request)
+    db.session.refresh(inventory)
+
+    assert request.stage == "Allocated"
+    assert inventory.quantity == 10
