@@ -5,8 +5,8 @@ const mockDonations = [
     amount: 5000,
     paymentMethod: "M-Pesa",
     createdAt: "2026-02-12",
-    status: "completed" as const,
-    transactionId: "MPESA-20260212-001",
+    status: "Successful" as const,
+    transactionCode: "MPESA-20260212-001",
   },
   {
     id: "2",
@@ -14,8 +14,8 @@ const mockDonations = [
     amount: 2500,
     paymentMethod: "Card",
     createdAt: "2026-01-28",
-    status: "completed" as const,
-    transactionId: "CARD-20260128-002",
+    status: "Successful" as const,
+    transactionCode: "CARD-20260128-002",
   },
   {
     id: "3",
@@ -23,8 +23,8 @@ const mockDonations = [
     amount: 1200,
     paymentMethod: "M-Pesa",
     createdAt: "2026-01-15",
-    status: "pending" as const,
-    transactionId: "MPESA-20260115-003",
+    status: "Pending" as const,
+    transactionCode: "MPESA-20260115-003",
   },
 ];
 
@@ -32,7 +32,7 @@ export default function DonationHistory() {
   const donations = mockDonations;
 
   const totalDonated = donations
-    .filter((donation) => donation.status === "completed")
+    .filter((donation) => donation.status === "Successful")
     .reduce((total, donation) => total + donation.amount, 0);
 
   const formatCurrency = (amount: number) =>
@@ -43,9 +43,10 @@ export default function DonationHistory() {
     }).format(amount);
 
   const statusStyles = {
-    completed: "bg-green-100 text-green-700",
-    pending: "bg-yellow-100 text-yellow-700",
-    failed: "bg-red-100 text-red-700",
+    Successful: "bg-green-100 text-green-700",
+    Pending: "bg-yellow-100 text-yellow-700",
+    Processing: "bg-blue-100 text-blue-700",
+    Failed: "bg-red-100 text-red-700",
   };
 
   return (
@@ -104,7 +105,7 @@ export default function DonationHistory() {
                   </span>
                 </td>
                 <td className="px-5 py-4 text-gray-500">
-                  {donation.transactionId}
+                  {donation.transactionCode}
                 </td>
               </tr>
             ))}

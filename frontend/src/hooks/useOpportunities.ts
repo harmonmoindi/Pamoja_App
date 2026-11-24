@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import { opportunities as mockOpportunities } from "../data/mock/opportunities";
+import { mockOpportunities } from "../data/mock/opportunities";
 import type {
   Opportunity,
   OpportunityFilters,
