@@ -1,8 +1,8 @@
 from flask import Blueprint, jsonify
 from sqlalchemy import select
-
 from app.errors import ApiError
 from app.extensions import db
+from app.models.assistance_request import AssistanceRequest
 from app.models.delivery import Delivery
 from app.models.organization import Organization
 from app.models.mixins import utcnow
@@ -13,7 +13,6 @@ from app.utils.reference_ids import make_reference
 from app.utils.validators import parse_body
 
 bp = Blueprint("deliveries", __name__, url_prefix="/api/deliveries")
-
 TRANSITIONS = {
     "pending": {"assigned"},
     "assigned": {"in_transit", "failed"},
@@ -29,64 +28,46 @@ def validate_transition(current, new):
 
 def get_agency_delivery(delivery_id, user_id):
     delivery = db.session.scalar(
-        select(Delivery)
-        .join(Organization, Delivery.organization_id == Organization.id)
-        .where(Delivery.id == delivery_id, Organization.owner_id == user_id)
-        .with_for_update()
+        select(Delivery).join(Organization, Delivery.organization_id == Organization.id)
+        .where(Delivery.id == delivery_id, Organization.owner_id == user_id).with_for_update()
     )
-    if delivery is None:
-        raise ApiError(404, "not_found", "Delivery not found")
+    if delivery is None: raise ApiError(404, "not_found", "Delivery not found")
     return delivery
 
 @bp.get("")
 @role_required("agency")
 def list_deliveries():
     user = get_current_user()
-    stmt = (
-        select(Delivery)
-        .join(Organization, Delivery.organization_id == Organization.id)
-        .where(Organization.owner_id == user.id)
-        .order_by(Delivery.created_at.desc())
-    )
+    stmt = select(Delivery).join(Organization, Delivery.organization_id == Organization.id).where(
+        Organization.owner_id == user.id
+    ).order_by(Delivery.created_at.desc())
     return jsonify(paginate(stmt, DeliverySchema()))
 
 @bp.post("")
 @role_required("agency")
 def create_delivery():
-    from app.models.assistance_request import AssistanceRequest
-
     user = get_current_user()
     data = parse_body(DeliveryCreateSchema())
 
-    assistance_request = db.session.get(AssistanceRequest, data["request_id"])
-    if assistance_request is None:
-        raise ApiError(404, "not_found", "Assistance request not found")
-
-    organization = db.session.scalar(
-        select(Organization).where(
-            Organization.id == assistance_request.organization_id,
-            Organization.owner_id == user.id
-        )
+    request = db.session.scalar(
+        select(AssistanceRequest).join(Organization, AssistanceRequest.organization_id == Organization.id)
+        .where(AssistanceRequest.id == data["request_id"], Organization.owner_id == user.id)
+        .with_for_update(of=AssistanceRequest)
     )
-
-    if organization is None:
-        raise ApiError(404, "not_found", "Assistance request not found")
+    if request is None: raise ApiError(404, "not_found", "Assistance request not found")
 
     if data.get("pledge_id") is not None:
         raise ApiError(409, "pledge_integration_pending", "Pledged deliveries require donor pledge integration")
 
-    delivery = Delivery(
-        request_id=assistance_request.id,
-        organization_id=organization.id,
-        pledge_id=None,
-        status="pending"
-    )
+    if request.stage != "Allocated" or request.quantity <= 0 or request.allocated < request.quantity:
+        raise ApiError(409, "not_fully_allocated", "Fully allocate resources before creating a delivery")
 
-    db.session.add(delivery)
-    db.session.flush()
+    existing = db.session.scalar(select(Delivery).where(Delivery.request_id == request.id, Delivery.status != "failed"))
+    if existing: raise ApiError(409, "delivery_exists", "An active or completed delivery already exists for this request")
 
+    delivery = Delivery(request_id=request.id, organization_id=request.organization_id, pledge_id=None, status="pending")
+    db.session.add(delivery); db.session.flush()
     delivery.reference = make_reference("DEL", delivery.id)
-
     db.session.commit()
 
     return jsonify({"delivery": DeliverySchema().dump(delivery)}), 201
@@ -96,20 +77,19 @@ def create_delivery():
 def update_delivery(delivery_id):
     user = get_current_user()
     data = parse_body(DeliveryUpdateSchema())
-
     delivery = get_agency_delivery(delivery_id, user.id)
-    new_status = data["status"]
+    validate_transition(delivery.status, data["status"])
 
-    validate_transition(delivery.status, new_status)
+    delivery.status = data["status"]
 
-    delivery.status = new_status
-
-    if new_status == "in_transit":
+    if delivery.status == "in_transit":
         delivery.dispatched_at = utcnow()
 
-    if new_status == "delivered":
+    if delivery.status == "delivered":
         delivery.delivered_at = utcnow()
+        request = db.session.get(AssistanceRequest, delivery.request_id)
+        if request is not None and request.stage != "Confirmed":
+            request.stage = "Delivered"
 
     db.session.commit()
-
     return jsonify({"delivery": DeliverySchema().dump(delivery)})
