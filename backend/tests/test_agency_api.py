@@ -467,3 +467,43 @@ def test_fully_allocated_request_updates_stage(
 
     assert request.stage == "Allocated"
     assert inventory.quantity == 10
+
+def test_agency_situation_report(client, login, agency_data):
+
+    token = get_token(login, "agency1@example.org")
+
+    response = client.get(
+        "/api/reports/situation",
+        headers=bearer(token)
+    )
+
+    assert response.status_code == 200
+
+    data = response.get_json()
+
+    assert data["totalRequests"] == 1
+    assert data["confirmedRequests"] == 0
+    assert data["byStage"]["Need identified"] == 1
+    assert data["byCounty"]["Turkana"] == 1
+    assert data["byCategory"]["Education"] == 1
+
+
+def test_donor_cannot_access_situation_reports(
+    client, login, agency_data
+):
+
+    token = get_token(login, "donor@example.org")
+
+    response = client.get(
+        "/api/reports/situation",
+        headers=bearer(token)
+    )
+
+    assert response.status_code == 403
+
+
+def test_situation_reports_require_authentication(client):
+
+    response = client.get("/api/reports/situation")
+
+    assert response.status_code == 401
