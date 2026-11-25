@@ -1,3 +1,4 @@
+
 import type { Opportunity } from "../../types/opportunity";
 
 interface OpportunityCardProps {
@@ -9,18 +10,15 @@ export default function OpportunityCard({
   opportunity,
   onDonate,
 }: OpportunityCardProps) {
+  const amountRaised = opportunity.raisedAmount ?? 0;
+
   const progress =
     opportunity.targetAmount > 0
       ? Math.min(
-          ((opportunity as Opportunity & { amountRaised?: number }).amountRaised ?? 0) /
-            opportunity.targetAmount *
-            100,
+          (amountRaised / opportunity.targetAmount) * 100,
           100
         )
       : 0;
-
-  const amountRaised =
-    (opportunity as Opportunity & { amountRaised?: number }).amountRaised ?? 0;
 
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat("en-KE", {
@@ -31,10 +29,16 @@ export default function OpportunityCard({
   };
 
   const statusStyles: Record<string, string> = {
-    open: "bg-green-100 text-green-700",
-    ongoing: "bg-blue-100 text-blue-700",
-    completed: "bg-gray-100 text-gray-700",
+    Published: "bg-green-100 text-green-700",
+    Pledged: "bg-blue-100 text-blue-700",
+    Allocated: "bg-purple-100 text-purple-700",
+    Delivered: "bg-gray-100 text-gray-700",
+    Confirmed: "bg-gray-100 text-gray-700",
   };
+
+  const isAvailable =
+    opportunity.status === "Published" ||
+    opportunity.status === "Pledged";
 
   return (
     <div className="overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm transition hover:shadow-md">
@@ -53,8 +57,9 @@ export default function OpportunityCard({
           </span>
 
           <span
-            className={`rounded-full px-3 py-1 text-xs font-medium capitalize ${
-              statusStyles[opportunity.status]
+            className={`rounded-full px-3 py-1 text-xs font-medium ${
+              statusStyles[opportunity.status] ??
+              "bg-gray-100 text-gray-700"
             }`}
           >
             {opportunity.status}
@@ -109,12 +114,10 @@ export default function OpportunityCard({
           <button
             type="button"
             onClick={() => onDonate?.(opportunity)}
-            disabled={(opportunity.status as string) === "completed"}
+            disabled={!isAvailable || !onDonate}
             className="rounded-lg bg-orange-600 px-4 py-2 text-sm font-medium text-white transition hover:bg-orange-700 disabled:cursor-not-allowed disabled:bg-gray-400"
           >
-            {(opportunity.status as string) === "completed"
-              ? "Completed"
-              : "Donate"}
+            {isAvailable ? "Donate" : "Unavailable"}
           </button>
         </div>
       </div>

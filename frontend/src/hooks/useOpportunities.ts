@@ -1,59 +1,48 @@
-import { useMemo, useState } from "react";
-import { mockOpportunities } from "../data/mock/opportunities";
+
+import { useCallback, useEffect, useState } from "react";
+import { opportunityService } from "../services/opportunityService";
 import type {
   Opportunity,
   OpportunityFilters,
 } from "../types/opportunity";
 
 const initialFilters: OpportunityFilters = {
-  category: "All",
-  county: "All",
-  urgency: "All",
+  category: "",
+  county: "",
+  urgency: "",
   search: "",
-  status: "All",
+  status: "",
 };
 
 export function useOpportunities() {
-  const [opportunities] = useState<Opportunity[]>(mockOpportunities);
-
+  const [opportunities, setOpportunities] = useState<Opportunity[]>([]);
   const [filters, setFilters] =
     useState<OpportunityFilters>(initialFilters);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
-  const filteredOpportunities = useMemo(() => {
-    return opportunities.filter((opportunity) => {
-      const matchesCategory =
-        filters.category === "All" ||
-        opportunity.category === filters.category;
+  const fetchOpportunities = useCallback(async () => {
+    try {
+      setLoading(true);
+      setError(null);
 
-      const matchesCounty =
-        filters.county === "All" ||
-        opportunity.county === filters.county;
+      const response = await opportunityService.getAll(filters);
 
-      const matchesUrgency =
-        filters.urgency === "All" ||
-        opportunity.urgency === filters.urgency;
-
-      const matchesStatus =
-        filters.status === "All" ||
-        opportunity.status === filters.status;
-
-      const searchTerm = filters.search.toLowerCase();
-
-      const matchesSearch =
-        opportunity.title.toLowerCase().includes(searchTerm) ||
-        opportunity.description.toLowerCase().includes(searchTerm) ||
-        opportunity.location.toLowerCase().includes(searchTerm) ||
-        opportunity.organization.toLowerCase().includes(searchTerm);
-
-      return (
-        matchesCategory &&
-        matchesCounty &&
-        matchesUrgency &&
-        matchesStatus &&
-        matchesSearch
+      setOpportunities(response.items);
+    } catch (err) {
+      setError(
+        err instanceof Error
+          ? err.message
+          : "Failed to load opportunities."
       );
-    });
-  }, [opportunities, filters]);
+    } finally {
+      setLoading(false);
+    }
+  }, [filters]);
+
+  useEffect(() => {
+    fetchOpportunities();
+  }, [fetchOpportunities]);
 
   const updateFilters = (newFilters: Partial<OpportunityFilters>) => {
     setFilters((currentFilters) => ({
@@ -66,16 +55,13 @@ export function useOpportunities() {
     setFilters(initialFilters);
   };
 
-  const getOpportunityById = (id: number) => {
-    return opportunities.find((opportunity) => opportunity.id === id);
-  };
-
   return {
     opportunities,
-    filteredOpportunities,
     filters,
+    loading,
+    error,
     updateFilters,
     resetFilters,
-    getOpportunityById,
+    refresh: fetchOpportunities,
   };
 }
