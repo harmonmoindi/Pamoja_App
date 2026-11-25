@@ -284,3 +284,89 @@ def test_agency_cannot_update_centre_with_empty_data(client, login, make_user):
 
     assert centre.name == "Kasarani Collection Centre"
     assert centre.opening_hours == "Monday-Friday, 8 AM-5 PM"
+
+def test_agency_can_only_list_own_centres(client, login, make_user):
+    agency1 = make_user(role="agency", email="mine-agency1@example.org")
+    agency2 = make_user(role="agency", email="mine-agency2@example.org")
+
+    org1 = Organization(
+        name="Nairobi Relief",
+        categories=["Food"],
+        counties=["Nairobi"],
+        verification_status="verified",
+        owner_id=agency1.id
+    )
+
+    org2 = Organization(
+        name="Kiambu Relief",
+        categories=["Clothing"],
+        counties=["Kiambu"],
+        verification_status="verified",
+        owner_id=agency2.id
+    )
+
+    db.session.add_all([org1, org2])
+    db.session.flush()
+
+    centre1 = CollectionCentre(
+        organization_id=org1.id,
+        name="Kasarani Collection Centre",
+        county="Nairobi",
+        general_area="Kasarani",
+        opening_hours="Monday-Friday, 8 AM-5 PM",
+        categories=["Food"]
+    )
+
+    centre2 = CollectionCentre(
+        organization_id=org2.id,
+        name="Ruiru Collection Centre",
+        county="Kiambu",
+        general_area="Ruiru",
+        opening_hours="Monday-Saturday, 8 AM-6 PM",
+        categories=["Clothing"]
+    )
+
+    db.session.add_all([centre1, centre2])
+    db.session.commit()
+
+    login_response = login("mine-agency1@example.org")
+    assert login_response.status_code == 200
+
+    token = login_response.get_json()["token"]
+
+    response = client.get(
+        "/api/centres/mine",
+        headers=bearer(token)
+    )
+
+    assert response.status_code == 200
+
+    data = response.get_json()
+
+    assert data["total"] == 1
+    assert len(data["items"]) == 1
+    assert data["items"][0]["id"] == centre1.id
+    assert data["items"][0]["name"] == "Kasarani Collection Centre"
+    assert data["items"][0]["organizationId"] == org1.id
+
+    assert centre2.id not in [c["id"] for c in data["items"]]
+
+def test_unauthenticated_user_cannot_list_agency_centres(client):
+    response = client.get("/api/centres/mine")
+
+    assert response.status_code == 401
+
+def test_donor_cannot_list_agency_centres(client, login, make_user):
+    make_user(role="donor", email="mine-donor@example.org")
+
+    login_response = login("mine-donor@example.org")
+    assert login_response.status_code == 200
+
+    token = login_response.get_json()["token"]
+
+    response = client.get(
+        "/api/centres/mine",
+        headers=bearer(token)
+    )
+
+    assert response.status_code == 403

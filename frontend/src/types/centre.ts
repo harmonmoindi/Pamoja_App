@@ -12,3 +12,19 @@ export interface CollectionCentre {
 }
 
 export type CentreInput = Omit<CollectionCentre, "id">;
+export interface ApiCollectionCentre {
+  id: number;
+  organizationId: number;
+  name: string;
+  county: string;
+  generalArea: string;
+  openingHours: string;
+  categories: string[];
+  createdAt: string;
+  updatedAt: string;
+}
+
+export type CentrePayload = Pick<
+  ApiCollectionCentre,
+  "name" | "county" | "generalArea" | "openingHours" | "categories"
+>;

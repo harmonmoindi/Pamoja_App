@@ -17,6 +17,20 @@ def list_centres():
     stmt = select(CollectionCentre).order_by(CollectionCentre.id.desc())
     return jsonify(paginate(stmt, CentreSchema()))
 
+@bp.get("/mine")
+@role_required("agency")
+def list_my_centres():
+    user = get_current_user()
+
+    stmt = (
+        select(CollectionCentre)
+        .join(Organization, CollectionCentre.organization_id == Organization.id)
+        .where(Organization.owner_id == user.id)
+        .order_by(CollectionCentre.id.desc())
+    )
+
+    return jsonify(paginate(stmt, CentreSchema()))
+
 @bp.post("")
 @role_required("agency")
 def create_centre():
