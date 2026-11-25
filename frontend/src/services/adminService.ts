@@ -1,5 +1,16 @@
 import { api, Page } from "@/lib/apiClient";
-import { AdminOverview, Agency, AuditEvent, AuditKind, ChecklistItem, VerificationStatus } from "@/types/admin";
+import {
+  AdminOverview,
+  Agency,
+  AuditEvent,
+  AuditKind,
+  ChecklistItem,
+  DuplicatePair,
+  DuplicateStatus,
+  OversightRequest,
+  Priority,
+  VerificationStatus,
+} from "@/types/admin";
 import { User, UserRole, UserStatus } from "@/types/user";
 
 // ---- Agency verification (admin only) ------------------------------------
@@ -25,6 +36,25 @@ export function listAudit(params: { q?: string; kind?: AuditKind; page?: number;
 
 export function getOverview() {
   return api<AdminOverview>("/admin/overview");
+}
+
+// ---- Request oversight and duplicate review (admin only) -----------------
+export function listOversightRequests(
+  params: { q?: string; stage?: string; priority?: Priority; page?: number; perPage?: number } = {},
+) {
+  return api<Page<OversightRequest>>("/admin/requests", { params });
+}
+
+export function listDuplicates(params: { status?: DuplicateStatus; page?: number; perPage?: number } = {}) {
+  return api<Page<DuplicatePair>>("/admin/duplicates", { params });
+}
+
+export function scanDuplicates() {
+  return api<{ created: number }>("/admin/duplicates/scan", { method: "POST" });
+}
+
+export function decideDuplicate(id: number | string, status: "separate" | "escalated") {
+  return api<{ duplicate: DuplicatePair }>(`/admin/duplicates/${id}`, { method: "PATCH", body: { status } });
 }
 
 // ---- Users (admin only) --------------------------------------------------
