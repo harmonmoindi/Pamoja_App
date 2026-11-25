@@ -1,65 +1,101 @@
-
-from flask import Blueprint, jsonify, request
+from flask import Blueprint, jsonify
 from sqlalchemy import select
-
+from app.errors import ApiError
 from app.extensions import db
 from app.models.collection_centre import CollectionCentre
-from app.schemas.centre_schema import CentreSchema
-from app.utils.decorators import login_required
+from app.models.organization import Organization
+from app.schemas.centre_schema import CentreCreateSchema, CentreUpdateSchema, CentreSchema
+from app.utils.decorators import get_current_user, role_required
 from app.utils.pagination import paginate
+from app.utils.validators import parse_body
 
-
-bp = Blueprint(
-    "centres",
-    __name__,
-    url_prefix="/api/centres",
-)
+bp = Blueprint("centres", __name__, url_prefix="/api/centres")
 
 
 @bp.get("")
-@login_required
 def list_centres():
-    """List collection centres with optional county filtering."""
+    stmt = select(CollectionCentre).order_by(CollectionCentre.id.desc())
+    return jsonify(paginate(stmt, CentreSchema()))
 
-    stmt = select(CollectionCentre)
+@bp.get("/mine")
+@role_required("agency")
+def list_my_centres():
+    user = get_current_user()
 
-    county = request.args.get("county")
-    category = request.args.get("category")
-
-    if county:
-        stmt = stmt.where(
-            CollectionCentre.county.ilike(county.strip())
-        )
-
-    if category:
-        stmt = stmt.where(
-            CollectionCentre.categories.contains([category.strip()])
-        )
-
-    stmt = stmt.order_by(CollectionCentre.name.asc())
-
-    return jsonify(
-        paginate(stmt, CentreSchema())
+    stmt = (
+        select(CollectionCentre)
+        .join(Organization, CollectionCentre.organization_id == Organization.id)
+        .where(Organization.owner_id == user.id)
+        .order_by(CollectionCentre.id.desc())
     )
 
+    return jsonify(paginate(stmt, CentreSchema()))
 
-@bp.get("/<int:centre_id>")
-@login_required
-def get_centre(centre_id):
-    """Get one collection centre."""
+@bp.post("")
+@role_required("agency")
+def create_centre():
+    user = get_current_user()
+    data = parse_body(CentreCreateSchema())
 
-    centre = db.session.get(
-        CollectionCentre,
-        centre_id,
+    organization = db.session.scalar(
+        select(Organization).where(Organization.owner_id == user.id)
+    )
+
+    if organization is None:
+        raise ApiError(404, "organization_not_found", "No organization is associated with your account")
+
+    centre = CollectionCentre(
+        organization_id=organization.id,
+        name=data["name"],
+        county=data["county"],
+        general_area=data["general_area"],
+        opening_hours=data["opening_hours"],
+        categories=data["categories"]
+    )
+
+    db.session.add(centre)
+    db.session.commit()
+
+    return jsonify({"centre": CentreSchema().dump(centre)}), 201
+
+@bp.patch("/<int:centre_id>")
+@role_required("agency")
+def update_centre(centre_id):
+    user = get_current_user()
+    data = parse_body(CentreUpdateSchema(partial=True))
+
+    if not data:
+        raise ApiError(400, "validation_error", "Provide at least one field to update")
+
+    centre = db.session.scalar(
+        select(CollectionCentre)
+        .join(Organization, CollectionCentre.organization_id == Organization.id)
+        .where(
+            CollectionCentre.id == centre_id,
+            Organization.owner_id == user.id
+        )
+        .with_for_update(of=CollectionCentre)
     )
 
     if centre is None:
-        from app.errors import ApiError
+        raise ApiError(404, "not_found", "Collection centre not found")
 
+    for field, value in data.items():
+        setattr(centre, field, value)
+
+    db.session.commit()
+
+    return jsonify({"centre": CentreSchema().dump(centre)})
+
+@bp.get("/<int:centre_id>")
+def get_centre(centre_id):
+    centre = db.session.get(CollectionCentre, centre_id)
+
+    if centre is None:
         raise ApiError(
             404,
             "not_found",
-            "Collection centre not found",
+            "Collection centre not found"
         )
 
     return jsonify({
