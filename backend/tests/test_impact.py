@@ -34,8 +34,8 @@ def test_impact_summary_is_public_and_counts_only_confirmed_deliveries(client, m
     ))
     donor = make_user(role="donor", email="donor@example.org", name="Donor")
     # The test database does not enforce foreign keys, so a plain id is enough for opportunity_id
-    db.session.add(Pledge(donor_id=donor.id, opportunity_id=1, type="in-kind", status="pending", quantity=3))
-    db.session.add(Pledge(donor_id=donor.id, opportunity_id=1, type="in-kind", status="fulfilled", quantity=2))
+    db.session.add(Pledge(donor_id=donor.id, opportunity_id=1, pledge_type="in_kind", status="pending", quantity=3))
+    db.session.add(Pledge(donor_id=donor.id, opportunity_id=1, pledge_type="in_kind", status="fulfilled", quantity=2))
     db.session.commit()
 
     res = client.get("/api/impact/summary")  # no token: the page is public
