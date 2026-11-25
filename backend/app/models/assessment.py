@@ -5,7 +5,7 @@ class Assessment(TimestampMixin, db.Model):
     __tablename__ = "assessments"
 
     id = db.Column(db.Integer, primary_key=True)
-    request_id = db.Column(db.Integer, db.ForeignKey("assistance_requests.id"), nullable=False, index=True)
+    request_id = db.Column(db.Integer, db.ForeignKey("assistance_requests.id"), nullable=False, unique=True, index=True)
     assessor_id = db.Column(db.Integer, db.ForeignKey("users.id"), nullable=False, index=True)
     outcome = db.Column(db.String(30), nullable=False)
     priority = db.Column(db.String(20), nullable=False)

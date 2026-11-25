@@ -1,11 +1,10 @@
 from marshmallow import fields, validate
 from app.schemas import CamelSchema
 
+ASSESSMENT_OUTCOMES = ("approved", "rejected", "needs_info")
+
 class AssessmentCreateSchema(CamelSchema):
-    outcome = fields.Str(required=True, validate=[
-        validate.Length(min=1, max=30),
-        validate.Regexp(r"\S", error="Outcome cannot be blank")
-    ])
+    outcome = fields.Str(required=True, validate=validate.OneOf(ASSESSMENT_OUTCOMES))
     priority = fields.Str(required=True, validate=[
         validate.Length(min=1, max=20),
         validate.Regexp(r"\S", error="Priority cannot be blank")
