@@ -42,9 +42,7 @@ export default function OpportunityFilters({
             id="opportunity-search"
             type="text"
             value={searchTerm}
-            onChange={(event) =>
-              setSearchTerm(event.target.value)
-            }
+            onChange={(event) => setSearchTerm(event.target.value)}
             placeholder="Search by title or location..."
             className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm outline-none focus:border-orange-500 focus:ring-2 focus:ring-orange-100"
           />
@@ -69,12 +67,13 @@ export default function OpportunityFilters({
             className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm outline-none focus:border-orange-500"
           >
             <option value="all">All categories</option>
-            <option value="food">Food</option>
-            <option value="medical">Medical</option>
-            <option value="education">Education</option>
-            <option value="shelter">Shelter</option>
-            <option value="emergency">Emergency</option>
-            <option value="other">Other</option>
+            <option value="Food">Food</option>
+            <option value="Water">Water</option>
+            <option value="Shelter">Shelter</option>
+            <option value="Medical">Medical</option>
+            <option value="Education">Education</option>
+            <option value="Clothing">Clothing</option>
+            <option value="Other">Other</option>
           </select>
         </div>
 
@@ -97,9 +96,13 @@ export default function OpportunityFilters({
             className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm outline-none focus:border-orange-500"
           >
             <option value="all">All statuses</option>
-            <option value="open">Open</option>
-            <option value="ongoing">Ongoing</option>
-            <option value="completed">Completed</option>
+            <option value="Need identified">Need identified</option>
+            <option value="Assessed">Assessed</option>
+            <option value="Published">Published</option>
+            <option value="Pledged">Pledged</option>
+            <option value="Allocated">Allocated</option>
+            <option value="Delivered">Delivered</option>
+            <option value="Confirmed">Confirmed</option>
           </select>
         </div>
       </div>
