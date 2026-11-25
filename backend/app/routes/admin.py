@@ -7,6 +7,7 @@ from app.models.audit_log import AUDIT_KINDS, AuditLog
 from app.models.mixins import utcnow
 from app.models.organization import VERIFICATION_STATUSES, Organization
 from app.models.user import User
+from app.models.duplicate_flag import DuplicateFlag
 from app.schemas.admin_schema import (
     AdminAgencySchema,
     AgencyDecisionSchema,
@@ -151,7 +152,9 @@ def overview():
     ) or 0
     verified_orgs = db.session.scalars(select(Organization).where(Organization.verification_status == "verified")).all()
     counties = {county for org in verified_orgs for county in (org.counties or [])}
-    flagged = 0
+    flagged = db.session.scalar(
+    select(func.count(DuplicateFlag.id)).where(DuplicateFlag.status == "needs-review")
+    ) or 0
 
     return jsonify(
         {
