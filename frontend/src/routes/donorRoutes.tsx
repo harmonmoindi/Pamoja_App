@@ -1,3 +1,4 @@
+
 import { Navigate, RouteObject } from "react-router";
 import { PortalLayout } from "@/components/layout/PortalLayout";
 import { page } from "./lazyPage";
@@ -14,6 +15,7 @@ export const donorRoutes: RouteObject = {
     { path: "pledges", element: page("donor/MyPledges") },
     { path: "notifications", element: page("donor/Notifications") },
     { path: "appointments", element: page("donor/Appointments") },
+    { path: "appointments/book", element: page("donor/AppointmentBooking") },
     { path: "appointments/book/:id", element: page("donor/AppointmentBooking") },
     { path: "preferences", element: page("donor/Preferences") },
   ],

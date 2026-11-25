@@ -1,25 +1,101 @@
-import { useState } from "react";
+
+import { useCallback, useEffect, useMemo, useState } from "react";
+import { centreService } from "../services/centreService";
 import { initialCentres } from "../data/mock/centres";
-import type { CollectionCentre, CentreInput } from "../types/centre";
+import type {
+  CollectionCentre,
+  CentreInput,
+} from "../types/centre";
 
-export default function useCentres() {
-  const [centres, setCentres] = useState<CollectionCentre[]>(initialCentres);
+export function useCentres() {
+  const [centres, setCentres] =
+    useState<CollectionCentre[]>(initialCentres);
 
-  const addCentre = (data: CentreInput) =>
-    setCentres(prev => [...prev, { ...data, id: crypto.randomUUID() }]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
-  const updateCentre = (id: string, data: CentreInput) =>
-    setCentres(prev => prev.map(c => c.id === id ? { ...c, ...data } : c));
+  const fetchCentres = useCallback(async () => {
+    try {
+      setLoading(true);
+      setError(null);
 
-  const toggleCentre = (id: string) =>
-    setCentres(prev => prev.map((c): CollectionCentre =>
-      c.id === id ? { ...c, status: c.status === "Active" ? "Inactive" : "Active" } : c
-    ));
+      const response = await centreService.getAll();
+      setCentres(response.items);
+    } catch (err) {
+      setError(
+        err instanceof Error
+          ? err.message
+          : "Failed to load collection centres."
+      );
+    } finally {
+      setLoading(false);
+    }
+  }, []);
 
-  const activeCount = centres.filter(c => c.status === "Active").length;
-  const nearCapacityCount = centres.filter(c =>
-    c.status === "Active" && c.capacity > 0 && c.currentLoad / c.capacity >= 0.8
-  ).length;
+  useEffect(() => {
+    fetchCentres();
+  }, [fetchCentres]);
 
-  return { centres, addCentre, updateCentre, toggleCentre, activeCount, nearCapacityCount };
+  const addCentre = (centre: CentreInput) => {
+    const newCentre: CollectionCentre = {
+      ...centre,
+      id: `CTR${Date.now()}`,
+    };
+
+    setCentres((current) => [...current, newCentre]);
+  };
+
+  const updateCentre = (
+    id: string,
+    updates: Partial<CollectionCentre>
+  ) => {
+    setCentres((current) =>
+      current.map((centre) =>
+        centre.id === id ? { ...centre, ...updates } : centre
+      )
+    );
+  };
+
+  const toggleCentre = (id: string) => {
+    setCentres((current) =>
+      current.map((centre) =>
+        centre.id === id
+          ? {
+              ...centre,
+              status:
+                centre.status === "Active" ? "Inactive" : "Active",
+            }
+          : centre
+      )
+    );
+  };
+
+  const activeCount = useMemo(
+    () => centres.filter((centre) => centre.status === "Active").length,
+    [centres]
+  );
+
+  const nearCapacityCount = useMemo(
+    () =>
+      centres.filter(
+        (centre) =>
+          centre.capacity > 0 &&
+          centre.currentLoad / centre.capacity >= 0.8
+      ).length,
+    [centres]
+  );
+
+  return {
+    centres,
+    loading,
+    error,
+    refresh: fetchCentres,
+    addCentre,
+    updateCentre,
+    toggleCentre,
+    activeCount,
+    nearCapacityCount,
+  };
 }
+
+export default useCentres;

@@ -86,3 +86,18 @@ def update_centre(centre_id):
     db.session.commit()
 
     return jsonify({"centre": CentreSchema().dump(centre)})
+
+@bp.get("/<int:centre_id>")
+def get_centre(centre_id):
+    centre = db.session.get(CollectionCentre, centre_id)
+
+    if centre is None:
+        raise ApiError(
+            404,
+            "not_found",
+            "Collection centre not found"
+        )
+
+    return jsonify({
+        "centre": CentreSchema().dump(centre)
+    })

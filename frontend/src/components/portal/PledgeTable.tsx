@@ -1,4 +1,3 @@
-
 import type { Pledge } from "../../types/pledge";
 
 interface PledgeTableProps {
@@ -17,9 +16,10 @@ export default function PledgeTable({
   };
 
   const statusStyles = {
-    pending: "bg-yellow-100 text-yellow-700",
-    fulfilled: "bg-green-100 text-green-700",
-    cancelled: "bg-red-100 text-red-700",
+    Pending: "bg-yellow-100 text-yellow-700",
+    Confirmed: "bg-blue-100 text-blue-700",
+    Fulfilled: "bg-green-100 text-green-700",
+    Cancelled: "bg-red-100 text-red-700",
   };
 
   if (pledges.length === 0) {

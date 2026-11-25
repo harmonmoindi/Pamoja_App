@@ -1,5 +1,6 @@
 import { api, type Page } from "../lib/apiClient";
 import type { ApiCollectionCentre, CentrePayload } from "../types/centre";
+import type { CollectionCentre } from "../types/centre";
 
 export function fetchCentres(page = 1) {
   return api<Page<ApiCollectionCentre>>("/centres", {
@@ -27,3 +28,11 @@ export function updateCentre(id: number, data: Partial<CentrePayload>) {
     body: data
   });
 }
+
+export const centreService = {
+  getAll: () =>
+    api<{ items: CollectionCentre[] }>("/centres"),
+
+  getById: (id: number) =>
+    api<{ centre: CollectionCentre }>(`/centres/${id}`)
+};

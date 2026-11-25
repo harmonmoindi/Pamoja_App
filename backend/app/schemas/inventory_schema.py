@@ -33,3 +33,26 @@ class InventoryItemCreateSchema(CamelSchema):
     quantity = fields.Int(required=True, strict=True, validate=validate.Range(min=0))
     unit = fields.Str(load_default="units", validate=validate.Length(min=1, max=40))
     minimum = fields.Int(load_default=0, strict=True, validate=validate.Range(min=0))
+
+
+class InventoryItemUpdateSchema(CamelSchema):
+    """PATCH /api/inventory/:id. Send only the fields that should change."""
+
+    name = fields.Str(validate=[
+        validate.Length(min=1, max=120),
+        validate.Regexp(r"\S", error="Name cannot be blank"),
+    ])
+    category = fields.Str(validate=[
+        validate.Length(min=1, max=80),
+        validate.Regexp(r"\S", error="Category cannot be blank"),
+    ])
+    county = fields.Str(validate=[
+        validate.Length(min=1, max=80),
+        validate.Regexp(r"\S", error="County cannot be blank"),
+    ])
+    quantity = fields.Int(strict=True, validate=validate.Range(min=0))
+    unit = fields.Str(validate=[
+        validate.Length(min=1, max=40),
+        validate.Regexp(r"\S", error="Unit cannot be blank"),
+    ])
+    minimum = fields.Int(strict=True, validate=validate.Range(min=0))

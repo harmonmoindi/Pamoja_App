@@ -10,7 +10,9 @@ export const mockPledges: Pledge[] = [
       status: "Pending",
       paymentMethod: "M-Pesa",
       reference: "",
-      date: ""
+      date: "2026-11-01",
+      createdAt: "2026-11-01",
+      dueDate: "2026-12-01"
   },
   {
       id: 2,
@@ -21,7 +23,9 @@ export const mockPledges: Pledge[] = [
       status: "Fulfilled",
       paymentMethod: "Card",
       reference: "",
-      date: ""
+      date: "2026-11-03",
+      createdAt: "2026-11-03",
+      dueDate: "2026-12-03"
   },
   {
       id: 3,
@@ -32,7 +36,9 @@ export const mockPledges: Pledge[] = [
       status: "Pending",
       paymentMethod: "Bank Transfer",
       reference: "",
-      date: ""
+      date: "2026-11-05",
+      createdAt: "2026-11-05",
+      dueDate: "2026-12-05"
   },
   {
       id: 4,
@@ -43,6 +49,8 @@ export const mockPledges: Pledge[] = [
       status: "Cancelled",
       paymentMethod: "M-Pesa",
       reference: "",
-      date: ""
+      date: "2026-11-08",
+      createdAt: "2026-11-08",
+      dueDate: "2026-12-08"
   },
 ];
