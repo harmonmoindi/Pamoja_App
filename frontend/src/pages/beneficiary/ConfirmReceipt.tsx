@@ -2,6 +2,7 @@ import { FormEvent, useEffect, useMemo, useState } from "react";
 import { AlertTriangle } from "lucide-react";
 import { BeneficiaryPage } from "@/components/beneficiary/BeneficiaryPage";
 import { useBeneficiaryRequests } from "@/components/beneficiary/BeneficiaryRequests";
+import { Button } from "@/components/ui/Button";
 import { confirmReceipt, myDeliveries } from "@/services/requestService";
 import type { ReceiptOutcome } from "@/types/request";
 
@@ -121,19 +122,19 @@ export default function ConfirmReceipt() {
       title="Confirm assistance receipt"
       description="Confirm deliveries marked as delivered by your reviewing agency."
     >
-      <form className="bn-panel bn-form bn-section" onSubmit={(event) => void submit(event)}>
-        <div className="bn-alert" role="note">
+      <form className="form-card" onSubmit={(event) => void submit(event)} style={{ maxWidth: 640 }}>
+        <div className="demo-warning" role="note">
           <AlertTriangle size={18} aria-hidden="true" />
           <p>Demo only: confirmation is for demonstration deliveries created in the agency portal.</p>
         </div>
 
         {message && (
-          <p className="bn-note" role="status">
+          <p className="notice" role="status" style={{ marginTop: 16 }}>
             {message}
           </p>
         )}
         {error && (
-          <p className="bn-error" role="alert">
+          <p className="error-text" role="alert">
             {error}
           </p>
         )}
@@ -184,10 +185,10 @@ export default function ConfirmReceipt() {
           />
         </label>
 
-        <div className="bn-form-actions start">
-          <button className="bn-primary" type="submit" disabled={submitting || !deliveryId}>
+        <div className="form-actions" style={{ justifyContent: "flex-start" }}>
+          <Button type="submit" disabled={submitting || !deliveryId}>
             {submitting ? "Submitting..." : "Submit receipt confirmation"}
-          </button>
+          </Button>
         </div>
       </form>
     </BeneficiaryPage>

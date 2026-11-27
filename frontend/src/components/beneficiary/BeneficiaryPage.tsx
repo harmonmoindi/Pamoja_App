@@ -1,4 +1,5 @@
 import { ReactNode } from "react";
+import { PageHead } from "@/components/ui/PageHead";
 
 type BeneficiaryPageProps = {
   title: string;
@@ -10,14 +11,12 @@ type BeneficiaryPageProps = {
 export function BeneficiaryPage({ title, description, action, children }: BeneficiaryPageProps) {
   return (
     <>
-      <header className="bn-pagehead">
-        <div>
-          <p className="bn-kicker">Pamoja / Demonstration workspace</p>
-          <h1>{title}</h1>
-          <p>{description}</p>
-        </div>
-        {action}
-      </header>
+      <PageHead
+        eyebrow="Beneficiary workspace"
+        title={title}
+        description={description}
+        action={action}
+      />
       {children}
     </>
   );

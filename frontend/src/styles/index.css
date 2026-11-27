@@ -1952,14 +1952,18 @@ textarea {
   align-items: center;
   gap: 10px;
 }
-.profile > button {
+.profile > button,
+.profile > a {
   position: relative;
   background: transparent;
   border: 0;
   color: var(--muted);
   margin-right: 8px;
+  display: inline-flex;
+  align-items: center;
 }
-.profile > button i {
+.profile > button i,
+.profile > a i {
   position: absolute;
   width: 6px;
   height: 6px;
@@ -5816,6 +5820,124 @@ textarea {
     width: 100%;
   }
   .bn-review {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* Shared portal helpers used by the beneficiary workspace */
+.error-text {
+  color: #b91c1c;
+  font-size: 13px;
+  margin: 0 0 14px;
+}
+.request-icon.gold {
+  background: #fff5df;
+  color: #a86d00;
+}
+.portal-steps {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 14px;
+}
+.portal-step {
+  display: grid;
+  grid-template-columns: 24px 1fr;
+  gap: 12px;
+  align-items: start;
+}
+.portal-step-rail {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  min-height: 100%;
+}
+.portal-step-dot {
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  border: 2px solid #d7e0dc;
+  background: white;
+  color: white;
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+}
+.portal-step-dot.done {
+  border-color: var(--green);
+  background: var(--green);
+}
+.portal-step-rail i {
+  width: 2px;
+  flex: 1;
+  min-height: 18px;
+  margin-top: 4px;
+  background: #d7e0dc;
+}
+.portal-step-rail i.done {
+  background: var(--green);
+}
+.portal-step h3 {
+  margin: 0 0 4px;
+  font-size: 13px;
+  color: var(--navy);
+}
+.portal-step p {
+  margin: 0;
+  font-size: 11px;
+  color: var(--muted);
+  line-height: 1.45;
+}
+.wizard-progress {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+  margin: 18px 0 12px;
+}
+.wizard-progress span {
+  height: 6px;
+  border-radius: 999px;
+  background: #e4ece8;
+}
+.wizard-progress span.done {
+  background: var(--green);
+}
+.wizard-stepmeta {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 18px;
+  font-size: 12px;
+  color: var(--muted);
+}
+.wizard-stepmeta strong {
+  color: var(--navy);
+}
+.review-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 14px 18px;
+  margin: 0 0 16px;
+}
+.review-grid .full {
+  grid-column: 1 / -1;
+}
+.review-grid dt {
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--muted);
+  margin-bottom: 4px;
+}
+.review-grid dd {
+  margin: 0;
+  font-size: 13px;
+  color: var(--navy);
+  font-weight: 600;
+}
+@media (max-width: 720px) {
+  .review-grid {
     grid-template-columns: 1fr;
   }
 }

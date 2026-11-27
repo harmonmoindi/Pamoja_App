@@ -3,6 +3,7 @@ import { AlertTriangle } from "lucide-react";
 import { useNavigate } from "react-router";
 import { BeneficiaryPage } from "@/components/beneficiary/BeneficiaryPage";
 import { useBeneficiaryRequests } from "@/components/beneficiary/BeneficiaryRequests";
+import { Button } from "@/components/ui/Button";
 import { requestCategories, requestUrgencies } from "@/data/mock/beneficiaryRequests";
 import { listVerifiedOrganizations } from "@/services/requestService";
 import type { VerifiedOrganization } from "@/types/request";
@@ -113,24 +114,24 @@ export default function RequestWizard() {
       title="Request assistance"
       description="Submit a need for agency review. Approved requests are published for donors."
     >
-      <form className="bn-panel bn-form bn-section" onSubmit={(event) => void submit(event)}>
-        <div className="bn-alert" role="note">
+      <form className="form-card" onSubmit={(event) => void submit(event)} style={{ maxWidth: 760 }}>
+        <div className="demo-warning" role="note">
           <AlertTriangle size={18} aria-hidden="true" />
           <p>Demo only: please do not submit real identities, personal stories, medical details, contact information, or sensitive documents.</p>
         </div>
 
-        <div className="bn-progress" aria-hidden="true">
-          {stepLabels.map((_, index) => (
-            <span key={stepLabels[index]} className={index <= step ? "done" : ""} />
+        <div className="wizard-progress" aria-hidden="true">
+          {stepLabels.map((label, index) => (
+            <span key={label} className={index <= step ? "done" : ""} />
           ))}
         </div>
-        <div className="bn-stepmeta">
+        <div className="wizard-stepmeta">
           <strong>Step {step + 1} of 3</strong>
           <span>{stepLabels[step]}</span>
         </div>
 
         {step === 0 && (
-          <div className="bn-stepbody">
+          <div>
             <label>
               Assistance category
               <select value={category} onChange={(event) => setCategory(event.target.value)}>
@@ -160,14 +161,14 @@ export default function RequestWizard() {
                 ))}
               </select>
             </label>
-            <p className="bn-help">
+            <p style={{ color: "var(--muted)", fontSize: 12, marginTop: -8 }}>
               Your request is sent to the selected agency for review. After approval it appears on the donor page.
             </p>
           </div>
         )}
 
         {step === 1 && (
-          <div className="bn-stepbody">
+          <div>
             <label>
               Request title
               <input
@@ -195,7 +196,7 @@ export default function RequestWizard() {
                 maxLength={280}
               />
             </label>
-            <div className="bn-form-grid">
+            <div className="field-grid">
               <label>
                 Resource required
                 <input
@@ -229,8 +230,8 @@ export default function RequestWizard() {
         )}
 
         {step === 2 && (
-          <div className="bn-stepbody">
-            <dl className="bn-review">
+          <div>
+            <dl className="review-grid">
               <div>
                 <dt>Category</dt>
                 <dd>{category}</dd>
@@ -262,23 +263,22 @@ export default function RequestWizard() {
                 <dd>{summary.trim()}</dd>
               </div>
             </dl>
-            <p className="bn-help">
+            <p style={{ color: "var(--muted)", fontSize: 12 }}>
               Submitting sends this request to the agency portal for review. Approved needs are published for donors.
             </p>
           </div>
         )}
 
         {error && (
-          <p className="bn-error" role="alert">
+          <p className="error-text" role="alert">
             {error}
           </p>
         )}
 
-        <div className={`bn-form-actions ${step === 0 ? "start" : ""}`}>
+        <div className="form-actions" style={step === 0 ? { justifyContent: "flex-start" } : undefined}>
           {step > 0 && (
-            <button
-              className="bn-secondary"
-              type="button"
+            <Button
+              variant="outline"
               disabled={submitting}
               onClick={() => {
                 setError("");
@@ -286,16 +286,16 @@ export default function RequestWizard() {
               }}
             >
               ← Back
-            </button>
+            </Button>
           )}
           {step < 2 ? (
-            <button className="bn-primary" type="button" onClick={continueStep}>
-              {step === 0 ? "Continue" : "Review request"} <span aria-hidden="true">→</span>
-            </button>
+            <Button onClick={continueStep}>
+              {step === 0 ? "Continue" : "Review request"} →
+            </Button>
           ) : (
-            <button className="bn-primary" type="submit" disabled={submitting}>
+            <Button type="submit" disabled={submitting}>
               {submitting ? "Submitting..." : "Submit assistance request"}
-            </button>
+            </Button>
           )}
         </div>
       </form>

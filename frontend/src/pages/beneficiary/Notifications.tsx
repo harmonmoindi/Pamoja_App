@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { AlertTriangle } from "lucide-react";
 import { Link } from "react-router";
 import { BeneficiaryPage } from "@/components/beneficiary/BeneficiaryPage";
+import { Button } from "@/components/ui/Button";
 import {
   notificationService,
   type ApiNotification,
@@ -55,40 +56,48 @@ export default function Notifications() {
       title="Notifications"
       description="Updates from request review, delivery, and platform activity."
       action={
-        <button className="bn-secondary" type="button" onClick={() => void markAllRead()} disabled={busy || loading}>
+        <Button variant="outline" onClick={() => void markAllRead()} disabled={busy || loading}>
           Mark all read
-        </button>
+        </Button>
       }
     >
-      {error && (
-        <p className="bn-error bn-section" role="alert">
-          {error}{" "}
-          <button className="bn-link" type="button" onClick={() => void load()}>
-            Try again
-          </button>
-        </p>
-      )}
+      <section className="panel">
+        {error && (
+          <p className="error-text" role="alert">
+            {error}{" "}
+            <button className="btn btn-ghost" type="button" onClick={() => void load()}>
+              Try again
+            </button>
+          </p>
+        )}
 
-      {loading ? (
-        <p className="bn-empty bn-section">Loading notifications...</p>
-      ) : notes.length === 0 ? (
-        <p className="bn-empty bn-section">No notifications yet. Submit a request to get started.</p>
-      ) : (
-        <ul className="bn-notes bn-section">
-          {notes.map((note) => (
-            <li key={note.id} className={note.isRead ? "" : "unread"}>
-              <span className="bn-note-icon" aria-hidden="true">
-                <AlertTriangle size={16} />
-              </span>
-              <div>
-                <Link to={linkFor(note)}>{note.title}</Link>
-                <p>{note.body}</p>
-              </div>
-              {note.isRead ? <span className="bn-read">Read</span> : <i className="bn-unread" aria-label="Unread" />}
-            </li>
-          ))}
-        </ul>
-      )}
+        {loading ? (
+          <p style={{ color: "var(--muted)", margin: 0 }}>Loading notifications…</p>
+        ) : notes.length === 0 ? (
+          <p style={{ color: "var(--muted)", margin: 0 }}>
+            No notifications yet. Submit a request to get started.
+          </p>
+        ) : (
+          <div className="request-list">
+            {notes.map((note) => (
+              <Link key={note.id} to={linkFor(note)}>
+                <span className={`request-icon ${note.isRead ? "" : "gold"}`}>
+                  <AlertTriangle size={16} />
+                </span>
+                <div>
+                  <b>{note.title}</b>
+                  <p>{note.body}</p>
+                </div>
+                <span className={`status ${note.isRead ? "green" : "gold"}`}>
+                  <i />
+                  {note.isRead ? "Read" : "Unread"}
+                </span>
+                <span aria-hidden="true">→</span>
+              </Link>
+            ))}
+          </div>
+        )}
+      </section>
     </BeneficiaryPage>
   );
 }

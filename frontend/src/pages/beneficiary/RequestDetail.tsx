@@ -1,8 +1,16 @@
-import { Link, useParams } from "react-router";
+import { useParams } from "react-router";
 import { BeneficiaryPage } from "@/components/beneficiary/BeneficiaryPage";
 import { ProcessSteps } from "@/components/beneficiary/ProcessSteps";
 import { useBeneficiaryRequests } from "@/components/beneficiary/BeneficiaryRequests";
+import { Button } from "@/components/ui/Button";
+import { Status } from "@/components/ui/Status";
 import { trackingStepsFor } from "@/data/mock/beneficiaryRequests";
+
+function statusTone(status: string) {
+  if (status === "under review") return "gold";
+  if (status === "fulfilled") return "green";
+  return "blue";
+}
 
 export default function RequestDetail() {
   const { reference = "" } = useParams();
@@ -14,7 +22,7 @@ export default function RequestDetail() {
   if (loading) {
     return (
       <BeneficiaryPage title="Loading request" description="Fetching your assistance request.">
-        <p className="bn-empty bn-section">Loading...</p>
+        <p style={{ color: "var(--muted)" }}>Loading…</p>
       </BeneficiaryPage>
     );
   }
@@ -22,9 +30,9 @@ export default function RequestDetail() {
   if (error) {
     return (
       <BeneficiaryPage title="Unable to load request" description={error}>
-        <button className="bn-secondary bn-section" type="button" onClick={() => void refresh()}>
+        <Button variant="outline" onClick={() => void refresh()}>
           Try again
-        </button>
+        </Button>
       </BeneficiaryPage>
     );
   }
@@ -32,9 +40,9 @@ export default function RequestDetail() {
   if (!request) {
     return (
       <BeneficiaryPage title="Request not found" description="That request reference was not found in your account.">
-        <Link className="bn-secondary bn-section" to="/beneficiary/requests">
+        <Button to="/beneficiary/requests" variant="outline">
           Back to my requests
-        </Link>
+        </Button>
       </BeneficiaryPage>
     );
   }
@@ -44,17 +52,22 @@ export default function RequestDetail() {
       title={request.title}
       description={`${request.reference} · Submitted ${request.submittedOn}. Stage: ${request.stage}.`}
       action={
-        <Link className="bn-secondary" to="/beneficiary/requests">
+        <Button to="/beneficiary/requests" variant="outline">
           All requests
-        </Link>
+        </Button>
       }
     >
-      <div className="bn-dash bn-section">
-        <section className="bn-panel bn-detail">
-          <span className={`bn-status ${request.status === "approved" ? "" : request.status.replace(" ", "-")}`}>
-            {request.status}
-          </span>
-          <dl>
+      <div className="dashboard-grid">
+        <section className="panel wide">
+          <div className="panel-head">
+            <div>
+              <h2>Request details</h2>
+              <p>{request.reference}</p>
+            </div>
+            <Status tone={statusTone(request.status)}>{request.status}</Status>
+          </div>
+
+          <dl className="review-grid">
             <div>
               <dt>Category</dt>
               <dd>{request.category}</dd>
@@ -81,25 +94,41 @@ export default function RequestDetail() {
               <dt>Submitted</dt>
               <dd>{request.submittedOn}</dd>
             </div>
+            <div className="full">
+              <dt>Description</dt>
+              <dd>{request.summary}</dd>
+            </div>
           </dl>
-          <p>{request.summary}</p>
+
           {request.status === "under review" && (
-            <p className="bn-note">Waiting for agency review. Once approved, this need is published for donors and visible to admin oversight.</p>
+            <p style={{ color: "var(--muted)", fontSize: 13 }}>
+              Waiting for agency review. Once approved, this need is published for donors and visible to admin oversight.
+            </p>
           )}
-          {request.stage === "Published" && <p className="bn-note">Approved and published for donors.</p>}
+          {request.stage === "Published" && (
+            <p style={{ color: "var(--muted)", fontSize: 13 }}>Approved and published for donors.</p>
+          )}
           {request.stage === "Delivered" && (
-            <Link className="bn-primary" to="/beneficiary/receipt">
-              Confirm receipt
-            </Link>
+            <Button to="/beneficiary/receipt">Confirm receipt</Button>
           )}
-          {request.status === "fulfilled" && <p className="bn-note">Receipt confirmed for this request.</p>}
+          {request.status === "fulfilled" && (
+            <p style={{ color: "var(--muted)", fontSize: 13 }}>Receipt confirmed for this request.</p>
+          )}
         </section>
-        <section className="bn-panel bn-process">
-          <h2>Assistance journey</h2>
+
+        <section className="panel">
+          <div className="panel-head">
+            <div>
+              <h2>Assistance journey</h2>
+              <p>Current progress</p>
+            </div>
+          </div>
           <ProcessSteps steps={trackingStepsFor(request.status)} />
-          <Link className="bn-secondary block" to="/beneficiary/tracking">
-            View full workflow
-          </Link>
+          <div style={{ marginTop: 16 }}>
+            <Button to="/beneficiary/tracking" variant="outline">
+              View full workflow
+            </Button>
+          </div>
         </section>
       </div>
     </BeneficiaryPage>

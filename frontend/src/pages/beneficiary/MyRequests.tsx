@@ -1,8 +1,8 @@
 import { Plus } from "lucide-react";
-import { Link } from "react-router";
 import { BeneficiaryPage } from "@/components/beneficiary/BeneficiaryPage";
 import { RequestTable } from "@/components/beneficiary/RequestTable";
 import { useBeneficiaryRequests } from "@/components/beneficiary/BeneficiaryRequests";
+import { Button } from "@/components/ui/Button";
 
 export default function MyRequests() {
   const { requests, loading, error, refresh } = useBeneficiaryRequests();
@@ -12,24 +12,31 @@ export default function MyRequests() {
       title="My requests"
       description="View assistance requests submitted for agency review."
       action={
-        <Link className="bn-primary" to="/beneficiary/request">
+        <Button to="/beneficiary/request">
           <Plus size={16} /> New request
-        </Link>
+        </Button>
       }
     >
-      <section className="bn-panel bn-table-panel bn-section">
+      <section className="panel">
+        <div className="panel-head">
+          <div>
+            <h2>All assistance requests</h2>
+            <p>Live records from your beneficiary account</p>
+          </div>
+          <Button variant="outline" onClick={() => void refresh()} disabled={loading}>
+            Refresh
+          </Button>
+        </div>
+
         {error && (
-          <p className="bn-error" role="alert">
-            {error}{" "}
-            <button className="bn-link" type="button" onClick={() => void refresh()}>
-              Try again
-            </button>
+          <p className="error-text" role="alert">
+            {error}
           </p>
         )}
         {loading ? (
-          <p className="bn-empty">Loading your requests...</p>
+          <p style={{ color: "var(--muted)", margin: 0 }}>Loading your requests…</p>
         ) : requests.length === 0 ? (
-          <p className="bn-empty">No assistance requests yet.</p>
+          <p style={{ color: "var(--muted)", margin: 0 }}>No assistance requests yet.</p>
         ) : (
           <RequestTable requests={requests} caption="All assistance requests" />
         )}
