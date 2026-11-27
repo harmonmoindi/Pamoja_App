@@ -19,6 +19,9 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { Metric } from "@/components/ui/Metric";
+import { NeedCard } from "@/components/opportunities/NeedCard";
+import { useAsync } from "@/hooks/useAsync";
+import { loadNeeds } from "@/lib/needs";
 
 // To change the hero picture, replace this address (or use a file in frontend/public, e.g. "/images/hero.jpg").
 const HERO_IMAGE =
@@ -78,6 +81,7 @@ const values = [
 ];
 
 export default function Home() {
+  const { data: needs } = useAsync(() => loadNeeds(), []);
   return (
     <main>
       <section className="hero">
@@ -205,32 +209,26 @@ export default function Home() {
           </div>
         </div>
       </section>
-
-      {/*
-        TODO: "Featured opportunities" section.
-        Add it once the Donor dev has merged components/opportunities/OpportunityCard.tsx
-        and data/mock/opportunities.ts. It shows the first three opportunities:
-
+    
         <section className="section opportunities">
           <div className="container">
             <div className="section-top">
               <div className="section-heading left">
                 <span className="eyebrow">Featured opportunities</span>
                 <h2>Support where it matters</h2>
-                <p>These fictional examples demonstrate transparent resource coordination.</p>
+                <p>Examples of transparent resource coordination.</p>
               </div>
               <Button to="/explore" variant="outline">
                 View all opportunities <ArrowRight size={16} />
               </Button>
             </div>
             <div className="opportunity-grid">
-              {opportunities.slice(0, 3).map((o) => (
-                <OpportunityCard key={o.id} item={o} />
+              {(needs?.items ?? []).slice(0, 3).map((o) => (
+                <NeedCard key={o.id} item={o} />
               ))}
             </div>
           </div>
         </section>
-      */}
 
       <section className="section why">
         <div className="container why-grid">
