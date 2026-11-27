@@ -1,4 +1,4 @@
-
+import { Link } from "react-router";
 import { useEffect, useState } from "react";
 import PledgeTable from "../../components/portal/PledgeTable";
 import { pledgeService } from "../../services/pledgeService";
@@ -31,9 +31,15 @@ export default function MyPledges() {
     fetchPledges();
   }, []);
 
-  const totalPledged = pledges.reduce(
-    (total, pledge) => total + pledge.amount,
-    0
+  const totalPledged = pledges
+  .filter(
+    (pledge) =>
+      pledge.pledgeType !== "in_kind" &&
+      pledge.status !== "Cancelled"
+   )
+    .reduce(
+      (total, pledge) => total + pledge.amount,
+      0
   );
 
   const pendingPledges = pledges.filter(
@@ -60,6 +66,12 @@ export default function MyPledges() {
         <p className="mt-1 text-sm text-gray-500">
           View and track your humanitarian contribution pledges.
         </p>
+        <Link
+          to="/donor/pledges/new"
+          className="mt-4 inline-flex items-center rounded-md border border-transparent bg-orange-600 px-5 py-3 text-sm font-medium text-white hover:bg-orange-700"
+        >
+          Make a New Pledge
+        </Link>
       </div>
 
       {loading ? (

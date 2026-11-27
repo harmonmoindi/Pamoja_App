@@ -11,22 +11,15 @@ export default function OpportunityCard({
   onDonate,
 }: OpportunityCardProps) {
   const amountRaised = opportunity.raisedAmount ?? 0;
+  const targetQuantity =
+    opportunity.targetQuantity ?? opportunity.targetAmount ?? 0;
 
-  const progress =
-    opportunity.targetAmount > 0
-      ? Math.min(
-          (amountRaised / opportunity.targetAmount) * 100,
-          100
-        )
-      : 0;
-
-  const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat("en-KE", {
+  const formatCurrency = (amount: number) =>
+    new Intl.NumberFormat("en-KE", {
       style: "currency",
       currency: "KES",
       maximumFractionDigits: 0,
     }).format(amount);
-  };
 
   const statusStyles: Record<string, string> = {
     Published: "bg-green-100 text-green-700",
@@ -80,35 +73,45 @@ export default function OpportunityCard({
           Location: {opportunity.location}
         </p>
 
-        <div>
-          <div className="mb-2 flex justify-between text-sm">
-            <span className="text-gray-600">Amount raised</span>
-            <span className="font-semibold text-gray-900">
-              {Math.round(progress)}%
-            </span>
-          </div>
+        {/* Financial donations */}
+        <div className="rounded-lg bg-orange-50 p-4">
+          <p className="text-sm font-medium text-gray-600">
+            Confirmed Financial Donations
+          </p>
 
-          <div className="h-2 overflow-hidden rounded-full bg-gray-200">
-            <div
-              className="h-full rounded-full bg-orange-500"
-              style={{ width: `${progress}%` }}
-            />
-          </div>
+          <p className="mt-2 text-2xl font-bold text-orange-700">
+            {formatCurrency(amountRaised)}
+          </p>
 
-          <div className="mt-2 flex justify-between text-sm">
-            <span className="font-medium text-gray-800">
-              {formatCurrency(amountRaised)}
-            </span>
+          <p className="mt-1 text-xs text-gray-500">
+            Total confirmed payments received
+          </p>
 
-            <span className="text-gray-500">
-              Target: {formatCurrency(opportunity.targetAmount)}
-            </span>
-          </div>
+          {/* Resource quantity */}
+          {targetQuantity > 0 && (
+            <div className="mt-4 border-t border-orange-100 pt-3">
+              <p className="text-sm font-medium text-gray-600">
+                Resource Target Quantity
+              </p>
+
+              <p className="mt-1 text-lg font-semibold text-gray-900">
+                {targetQuantity.toLocaleString("en-KE")}
+              </p>
+            </div>
+          )}
+
+          <p className="mt-3 text-xs text-gray-500">
+            Financial totals exclude pending, failed and simulated
+            payments.
+          </p>
         </div>
 
+        {/* Opportunity actions */}
         <div className="flex items-center justify-between border-t border-gray-100 pt-4">
           <span className="text-sm text-gray-600">
-            {opportunity.beneficiaries} beneficiaries
+            {opportunity.beneficiaries > 0
+              ? `${opportunity.beneficiaries} beneficiaries`
+              : "Support this opportunity"}
           </span>
 
           <button

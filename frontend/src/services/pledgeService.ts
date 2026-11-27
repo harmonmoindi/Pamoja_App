@@ -1,4 +1,3 @@
-
 import { api } from "../lib/apiClient";
 import type { Pledge } from "../types/pledge";
 
@@ -6,6 +5,7 @@ export interface CreatePledgeInput {
   opportunityId: number;
   type: "financial" | "in_kind";
   amount?: number;
+  quantity?: number;
   paymentMethod?: string;
   description?: string;
 }
@@ -24,7 +24,7 @@ export const pledgeService = {
     api<{ pledge: Pledge }>(`/pledges/${id}`),
 
   cancel: (id: number) =>
-    api<{ message: string; pledge: Pledge }>(
+    api<{ pledge: Pledge }>(
       `/pledges/${id}/cancel`,
       { method: "PATCH" }
     ),
