@@ -38,5 +38,7 @@ class AssistanceRequest(TimestampMixin, db.Model):
     stage = db.Column(db.String(30), nullable=False, default="Need identified")
     priority = db.Column(db.String(30), nullable=True)
 
+    organization = db.relationship("Organization", foreign_keys=[organization_id])
+
     def __repr__(self) -> str:
         return f"<AssistanceRequest {self.reference} - {self.stage}>"

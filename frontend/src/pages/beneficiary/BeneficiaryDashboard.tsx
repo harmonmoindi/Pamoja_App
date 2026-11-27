@@ -4,58 +4,75 @@ import { BeneficiaryPage } from "@/components/beneficiary/BeneficiaryPage";
 import { ProcessSteps } from "@/components/beneficiary/ProcessSteps";
 import { RequestTable } from "@/components/beneficiary/RequestTable";
 import { useBeneficiaryRequests } from "@/components/beneficiary/BeneficiaryRequests";
+import { Button } from "@/components/ui/Button";
+import { Metric } from "@/components/ui/Metric";
 import { requestStats } from "@/data/mock/beneficiaryRequests";
 
-const statLabels = [
-  ["total", "Total requests"],
-  ["underReview", "Under review"],
-  ["approved", "Approved"],
-  ["fulfilled", "Fulfilled"],
-] as const;
-
 export default function BeneficiaryDashboard() {
-  const { requests } = useBeneficiaryRequests();
+  const { requests, loading, error } = useBeneficiaryRequests();
   const stats = requestStats(requests);
 
   return (
     <BeneficiaryPage
       title="Your assistance dashboard"
-      description="Track demonstration requests from submission through delivery."
+      description="Track requests from submission through agency review and donor support."
       action={
-        <Link className="bn-primary" to="/beneficiary/request">
+        <Button to="/beneficiary/request">
           <Plus size={16} /> New assistance request
-        </Link>
+        </Button>
       }
     >
-      <section className="bn-stats" aria-label="Request totals">
-        {statLabels.map(([key, label]) => (
-          <article key={key} className="bn-stat">
-            <span>{label}</span>
-            <strong>{stats[key]}</strong>
-            <small>Demo data</small>
-          </article>
-        ))}
-      </section>
+      <div className="portal-metrics">
+        <Metric label="Total requests" value={loading ? "…" : String(stats.total)} note="All submissions" tone="green" />
+        <Metric label="Under review" value={loading ? "…" : String(stats.underReview)} note="Awaiting agency" tone="gold" />
+        <Metric label="Approved" value={loading ? "…" : String(stats.approved)} note="In progress" tone="blue" />
+        <Metric label="Fulfilled" value={loading ? "…" : String(stats.fulfilled)} note="Confirmed" tone="navy" />
+      </div>
 
-      <div className="bn-dash">
-        <section className="bn-panel bn-table-panel">
-          <div className="bn-panel-head">
-            <h2>Recent requests</h2>
-            <Link className="bn-link" to="/beneficiary/requests">
-              View all <span aria-hidden="true">→</span>
-            </Link>
+      <div className="dashboard-grid">
+        <section className="panel wide">
+          <div className="panel-head">
+            <div>
+              <h2>Recent requests</h2>
+              <p>Latest assistance submissions</p>
+            </div>
+            <Button to="/beneficiary/requests" variant="ghost">
+              View all
+            </Button>
           </div>
-          <RequestTable requests={requests.slice(0, 4)} caption="Recent demonstration requests" />
+          {error ? (
+            <p className="error-text" role="alert">{error}</p>
+          ) : loading ? (
+            <p style={{ color: "var(--muted)", margin: 0 }}>Loading your requests…</p>
+          ) : requests.length === 0 ? (
+            <p style={{ color: "var(--muted)", margin: 0 }}>No assistance requests yet.</p>
+          ) : (
+            <RequestTable requests={requests.slice(0, 4)} caption="Recent assistance requests" />
+          )}
         </section>
 
-        <section className="bn-panel bn-process">
-          <h2>How the process works</h2>
+        <section className="panel">
+          <div className="panel-head">
+            <div>
+              <h2>How the process works</h2>
+              <p>From submission to confirmation</p>
+            </div>
+          </div>
           <ProcessSteps />
-          <Link className="bn-secondary block" to="/beneficiary/tracking">
-            View full workflow
-          </Link>
+          <div style={{ marginTop: 16 }}>
+            <Button to="/beneficiary/tracking" variant="outline">
+              View full workflow
+            </Button>
+          </div>
         </section>
       </div>
+
+      <p style={{ marginTop: 18, color: "var(--muted)", fontSize: 12 }}>
+        Need another portal?{" "}
+        <Link to="/beneficiary/workspace" style={{ color: "var(--green)", fontWeight: 700 }}>
+          Switch workspace
+        </Link>
+      </p>
     </BeneficiaryPage>
   );
 }

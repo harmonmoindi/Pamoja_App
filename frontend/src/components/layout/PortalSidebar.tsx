@@ -3,28 +3,54 @@ import {
   Bell,
   Check,
   CircleUserRound,
+  ClipboardList,
+  Clock,
   HandHeart,
   LayoutDashboard,
+  List,
   LogOut,
   PackageCheck,
+  Plus,
   Search,
   ShieldCheck,
+  Users,
   X,
+  type LucideIcon,
 } from "lucide-react";
 import { Logo } from "@/components/ui/Logo";
 import { useAuth } from "@/context/AuthContext";
 import { PortalRole, roleNav } from "@/data/constants/navigation";
 
-const navIcons = [
-  LayoutDashboard,
-  Search,
-  HandHeart,
-  PackageCheck,
-  Bell,
-  CircleUserRound,
-  ShieldCheck,
-  Check,
-];
+const iconsByPath: Record<string, LucideIcon> = {
+  "/donor/dashboard": LayoutDashboard,
+  "/explore": Search,
+  "/donor/donations": HandHeart,
+  "/donor/pledges": PackageCheck,
+  "/impact": HandHeart,
+  "/donor/notifications": Bell,
+  "/donor/preferences": CircleUserRound,
+  "/beneficiary/dashboard": LayoutDashboard,
+  "/beneficiary/request": Plus,
+  "/beneficiary/requests": List,
+  "/beneficiary/tracking": Clock,
+  "/beneficiary/receipt": Check,
+  "/beneficiary/notifications": Bell,
+  "/agency/dashboard": LayoutDashboard,
+  "/agency/requests": ClipboardList,
+  "/agency/assessment": Search,
+  "/agency/matching": HandHeart,
+  "/agency/inventory": PackageCheck,
+  "/agency/tasks": Check,
+  "/agency/deliveries": PackageCheck,
+  "/agency/centres": Search,
+  "/agency/appointments": Clock,
+  "/admin/dashboard": LayoutDashboard,
+  "/admin/verification": ShieldCheck,
+  "/admin/users": Users,
+  "/admin/requests": ClipboardList,
+  "/admin/duplicates": Search,
+  "/admin/audit": List,
+};
 
 type PortalSidebarProps = {
   role: PortalRole;
@@ -51,8 +77,8 @@ export function PortalSidebar({ role, open, onClose }: PortalSidebarProps) {
       </div>
       <div className="role-label">{role} workspace</div>
       <nav>
-        {roleNav[role].map(([label, href], i) => {
-          const Icon = navIcons[i % navIcons.length];
+        {roleNav[role].map(([label, href]) => {
+          const Icon = iconsByPath[href] ?? LayoutDashboard;
           return (
             <NavLink key={label} to={href} end={href === `/${role}/dashboard`} onClick={onClose}>
               <Icon size={18} />

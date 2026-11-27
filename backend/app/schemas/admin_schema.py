@@ -2,7 +2,7 @@ from marshmallow import fields, validate
 
 from app.extensions import db
 from app.models.assistance_request import AssistanceRequest
-from app.models.organization import CHECKLIST_ITEMS, VERIFICATION_STATUSES, Organization
+from app.models.organization import CHECKLIST_ITEMS, VERIFICATION_STATUSES
 from app.schemas import CamelSchema
 
 PRIORITIES = ("Urgent", "High priority", "Standard")
@@ -101,7 +101,7 @@ class OversightRequestSchema(CamelSchema):
         return req.reference or f"#{req.id}"
 
     def get_agency(self, req):
-        org = db.session.get(Organization, req.organization_id) if req.organization_id else None
+        org = req.organization
         return org.name if org else "Unassigned"
 
     def get_priority(self, req):
@@ -145,4 +145,3 @@ class DuplicateDecisionSchema(CamelSchema):
     """PATCH /admin/duplicates/:id"""
 
     status = fields.Str(required=True, validate=validate.OneOf(("separate", "escalated")))
-

@@ -1,16 +1,27 @@
+import { api, type Page } from "@/lib/apiClient";
 
-import type { Notification } from "../types/notification";
+export type ApiNotification = {
+  id: number;
+  title: string;
+  body: string;
+  kind: string;
+  isRead: boolean;
+  createdAt: string;
+};
 
 export const notificationService = {
-  getAll: async (): Promise<Notification[]> => {
-    return [];
-  },
+  getAll: (page = 1, perPage = 50) =>
+    api<Page<ApiNotification>>("/notifications", {
+      params: { page, perPage },
+    }),
 
-  markAsRead: async (_id: number): Promise<void> => {
-    throw new Error("Notification API is not available yet.");
-  },
+  markAsRead: (id: number) =>
+    api<{ notification: ApiNotification }>(`/notifications/${id}/read`, {
+      method: "PATCH",
+    }),
 
-  markAllAsRead: async (): Promise<void> => {
-    throw new Error("Notification API is not available yet.");
-  },
+  markAllAsRead: () =>
+    api<{ updated: number }>("/notifications/read-all", {
+      method: "PATCH",
+    }),
 };

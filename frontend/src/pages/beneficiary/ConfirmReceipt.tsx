@@ -1,66 +1,160 @@
-import { FormEvent, useMemo, useState } from "react";
+import { FormEvent, useEffect, useMemo, useState } from "react";
 import { AlertTriangle } from "lucide-react";
 import { BeneficiaryPage } from "@/components/beneficiary/BeneficiaryPage";
 import { useBeneficiaryRequests } from "@/components/beneficiary/BeneficiaryRequests";
-import { deliveryLabel, deliveryOutcomes } from "@/data/mock/beneficiaryRequests";
+import { Button } from "@/components/ui/Button";
+import { confirmReceipt, myDeliveries } from "@/services/requestService";
+import type { ReceiptOutcome } from "@/types/request";
+
+type DeliveryOption = {
+  id: number;
+  reference: string;
+  requestId: number;
+  status: string;
+  label: string;
+};
+
+const outcomeOptions: { label: string; value: ReceiptOutcome }[] = [
+  { label: "Yes, everything was received", value: "complete" },
+  { label: "Partially received", value: "partial" },
+  { label: "Not received", value: "not_received" },
+  { label: "Report a discrepancy", value: "discrepancy" },
+];
 
 export default function ConfirmReceipt() {
-  const { requests, confirmReceipt } = useBeneficiaryRequests();
-  const deliveries = useMemo(
-    () =>
-      [...requests]
-        .reverse()
-        .map((request, index) => ({
-          request,
-          label: deliveryLabel(request, index),
-        })),
-    [requests],
-  );
-  const [delivery, setDelivery] = useState(deliveries[0]?.request.reference ?? "");
-  const [outcome, setOutcome] = useState<(typeof deliveryOutcomes)[number]>(deliveryOutcomes[0]);
+  const { requests, refresh } = useBeneficiaryRequests();
+  const [deliveries, setDeliveries] = useState<DeliveryOption[]>([]);
+  const [deliveryId, setDeliveryId] = useState<number | "">("");
+  const [outcome, setOutcome] = useState<ReceiptOutcome>("complete");
   const [comments, setComments] = useState("");
   const [message, setMessage] = useState("");
+  const [error, setError] = useState("");
+  const [loading, setLoading] = useState(true);
+  const [submitting, setSubmitting] = useState(false);
 
-  const submit = (event: FormEvent) => {
+  useEffect(() => {
+    let active = true;
+
+    async function load() {
+      setLoading(true);
+      setError("");
+      try {
+        const page = await myDeliveries();
+        if (!active) return;
+        const mapped = page.items.map((item) => {
+          const request = requests.find((req) => req.id === item.requestId);
+          return {
+            id: item.id,
+            reference: item.reference || `DEL-${item.id}`,
+            requestId: item.requestId,
+            status: item.status,
+            label: `${item.reference || `DEL-${item.id}`} · ${request?.resource ?? "Assistance"}`,
+          };
+        });
+        setDeliveries(mapped);
+        if (mapped.length === 1) setDeliveryId(mapped[0].id);
+      } catch (err) {
+        if (!active) return;
+        setDeliveries([]);
+        setError(err instanceof Error ? err.message : "Unable to load deliveries.");
+      } finally {
+        if (active) setLoading(false);
+      }
+    }
+
+    void load();
+    return () => {
+      active = false;
+    };
+  }, [requests]);
+
+  const confirmable = useMemo(
+    () => deliveries.filter((item) => item.status === "delivered"),
+    [deliveries],
+  );
+
+  const submit = async (event: FormEvent) => {
     event.preventDefault();
-    const selected = deliveries.find((item) => item.request.reference === delivery)?.request;
-    if (!selected) {
-      setMessage("Choose a demonstration delivery to continue.");
+    if (submitting) return;
+    if (!deliveryId) {
+      setError("Choose a delivery to continue.");
       return;
     }
-    if (outcome === "Yes, everything was received" && selected.status === "approved") {
-      confirmReceipt(selected.reference);
+
+    setSubmitting(true);
+    setError("");
+    setMessage("");
+    try {
+      await confirmReceipt({
+        deliveryId,
+        outcome,
+        comments: comments.trim() || null,
+      });
+      setMessage(
+        outcome === "complete"
+          ? "Receipt confirmed. Thank you."
+          : "Feedback recorded for this delivery.",
+      );
+      setComments("");
+      await refresh();
+      const page = await myDeliveries();
+      setDeliveries(
+        page.items.map((item) => {
+          const request = requests.find((req) => req.id === item.requestId);
+          return {
+            id: item.id,
+            reference: item.reference || `DEL-${item.id}`,
+            requestId: item.requestId,
+            status: item.status,
+            label: `${item.reference || `DEL-${item.id}`} · ${request?.resource ?? "Assistance"}`,
+          };
+        }),
+      );
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Unable to submit receipt confirmation.");
+    } finally {
+      setSubmitting(false);
     }
-    setMessage(
-      outcome === "Yes, everything was received"
-        ? `Demonstration feedback recorded for ${selected.reference}. No real delivery took place.`
-        : `Demonstration discrepancy note saved for ${selected.reference}. This does not contact an agency.`,
-    );
-    setComments("");
   };
 
   return (
     <BeneficiaryPage
       title="Confirm assistance receipt"
-      description="Confirm fictional deliveries or report a discrepancy."
+      description="Confirm deliveries marked as delivered by your reviewing agency."
     >
-      <form className="bn-panel bn-form bn-section" onSubmit={submit}>
-        <div className="bn-alert" role="note">
+      <form className="form-card" onSubmit={(event) => void submit(event)} style={{ maxWidth: 640 }}>
+        <div className="demo-warning" role="note">
           <AlertTriangle size={18} aria-hidden="true" />
-          <p>Demo only: confirmation does not represent any real-world assistance.</p>
+          <p>Demo only: confirmation is for demonstration deliveries created in the agency portal.</p>
         </div>
 
         {message && (
-          <p className="bn-note" role="status">
+          <p className="notice" role="status" style={{ marginTop: 16 }}>
             {message}
+          </p>
+        )}
+        {error && (
+          <p className="error-text" role="alert">
+            {error}
           </p>
         )}
 
         <label>
           Delivery
-          <select value={delivery} onChange={(event) => setDelivery(event.target.value)}>
-            {deliveries.map((item) => (
-              <option key={item.request.reference} value={item.request.reference}>
+          <select
+            value={deliveryId === "" ? "" : String(deliveryId)}
+            onChange={(event) => setDeliveryId(event.target.value ? Number(event.target.value) : "")}
+            disabled={loading || confirmable.length === 0}
+          >
+            <option value="">
+              {loading
+                ? "Loading deliveries..."
+                : confirmable.length === 0
+                  ? "No delivered packages awaiting confirmation"
+                  : "Select a delivery"}
+            </option>
+            {confirmable.map((item) => (
+              <option key={item.id} value={item.id}>
                 {item.label}
               </option>
             ))}
@@ -69,10 +163,13 @@ export default function ConfirmReceipt() {
 
         <label>
           Did you receive the assistance?
-          <select value={outcome} onChange={(event) => setOutcome(event.target.value as (typeof deliveryOutcomes)[number])}>
-            {deliveryOutcomes.map((item) => (
-              <option key={item} value={item}>
-                {item}
+          <select
+            value={outcome}
+            onChange={(event) => setOutcome(event.target.value as ReceiptOutcome)}
+          >
+            {outcomeOptions.map((item) => (
+              <option key={item.value} value={item.value}>
+                {item.label}
               </option>
             ))}
           </select>
@@ -88,10 +185,10 @@ export default function ConfirmReceipt() {
           />
         </label>
 
-        <div className="bn-form-actions start">
-          <button className="bn-primary" type="submit">
-            Submit demonstration feedback
-          </button>
+        <div className="form-actions" style={{ justifyContent: "flex-start" }}>
+          <Button type="submit" disabled={submitting || !deliveryId}>
+            {submitting ? "Submitting..." : "Submit receipt confirmation"}
+          </Button>
         </div>
       </form>
     </BeneficiaryPage>

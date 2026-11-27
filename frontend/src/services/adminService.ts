@@ -29,16 +29,7 @@ export function decideAgency(id: number | string, decision: "approve" | "request
   });
 }
 
-// ---- Audit log and dashboard (admin only) --------------------------------
-export function listAudit(params: { q?: string; kind?: AuditKind; page?: number; perPage?: number } = {}) {
-  return api<Page<AuditEvent>>("/admin/audit", { params });
-}
-
-export function getOverview() {
-  return api<AdminOverview>("/admin/overview");
-}
-
-// ---- Request oversight and duplicate review (admin only) -----------------
+// ---- Request oversight (admin only) --------------------------------------
 export function listOversightRequests(
   params: { q?: string; stage?: string; priority?: Priority; page?: number; perPage?: number } = {},
 ) {
@@ -55,6 +46,17 @@ export function scanDuplicates() {
 
 export function decideDuplicate(id: number | string, status: "separate" | "escalated") {
   return api<{ duplicate: DuplicatePair }>(`/admin/duplicates/${id}`, { method: "PATCH", body: { status } });
+}
+
+export type { Priority };
+
+// ---- Audit log and dashboard (admin only) --------------------------------
+export function listAudit(params: { q?: string; kind?: AuditKind; page?: number; perPage?: number } = {}) {
+  return api<Page<AuditEvent>>("/admin/audit", { params });
+}
+
+export function getOverview() {
+  return api<AdminOverview>("/admin/overview");
 }
 
 // ---- Users (admin only) --------------------------------------------------

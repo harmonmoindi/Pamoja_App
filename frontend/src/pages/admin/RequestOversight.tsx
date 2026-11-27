@@ -56,7 +56,7 @@ export default function RequestOversight() {
       <PageHead
         eyebrow="Platform administration"
         title="Humanitarian request oversight"
-        description="Monitor request handling across participating agencies."
+        description="Monitor live assistance requests across participating agencies."
       />
 
       <div className="portal-metrics">
@@ -92,6 +92,9 @@ export default function RequestOversight() {
               </option>
             ))}
           </select>
+          <button type="button" onClick={reload} disabled={loading}>
+            Refresh
+          </button>
         </div>
 
         {error && <ErrorNotice message={error} onRetry={reload} />}

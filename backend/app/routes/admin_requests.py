@@ -5,6 +5,7 @@ Both files use the /api/admin prefix; each blueprint has its own name.
 """
 from flask import Blueprint, jsonify, request
 from sqlalchemy import and_, or_, select
+from sqlalchemy.orm import joinedload
 
 from app.errors import ApiError
 from app.extensions import db
@@ -49,6 +50,7 @@ def list_requests():
     Filters: ?q=reference-title-or-agency  ?stage=Published  ?priority=Urgent|High priority|Standard"""
     stmt = (
         select(AssistanceRequest)
+        .options(joinedload(AssistanceRequest.organization))
         .outerjoin(Organization, AssistanceRequest.organization_id == Organization.id)
         .order_by(AssistanceRequest.updated_at.desc(), AssistanceRequest.id.desc())
     )

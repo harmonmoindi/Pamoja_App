@@ -1,17 +1,55 @@
+import type { LifecycleStage } from "@/data/constants/lifecycle";
+import type { AssistanceRequest } from "@/types/request";
+
 export type BeneficiaryStatus = "under review" | "approved" | "fulfilled";
 
 export type BeneficiaryRequest = {
+  id: number;
   reference: string;
   title: string;
   category: string;
   location: string;
   status: BeneficiaryStatus;
+  stage: LifecycleStage;
   summary: string;
   resource: string;
   quantity: number;
   urgency: "Low" | "Medium" | "High";
   submittedOn: string;
+  organizationId: number | null;
 };
+
+export function statusFromStage(stage: LifecycleStage | string): BeneficiaryStatus {
+  if (stage === "Need identified") return "under review";
+  if (stage === "Confirmed") return "fulfilled";
+  return "approved";
+}
+
+export function mapAssistanceRequest(request: AssistanceRequest): BeneficiaryRequest {
+  const submitted = request.createdAt
+    ? new Date(request.createdAt).toLocaleDateString("en-GB", {
+        day: "numeric",
+        month: "short",
+        year: "numeric",
+      })
+    : "";
+
+  return {
+    id: request.id,
+    reference: request.reference || `REQ-${request.id}`,
+    title: request.title,
+    category: request.category,
+    location: request.county,
+    status: statusFromStage(request.stage),
+    stage: request.stage,
+    summary: request.summary,
+    resource: request.resource,
+    quantity: request.quantity,
+    urgency: request.urgency,
+    submittedOn: submitted,
+    organizationId: request.organizationId,
+  };
+}
 
 export type AssistanceStep = {
   title: string;
@@ -25,82 +63,6 @@ export type TrackingStep = {
   detail: string;
   done: boolean;
 };
-
-// Matches the concept-prototype screens: six approved demonstration requests.
-export const seedBeneficiaryRequests: BeneficiaryRequest[] = [
-  {
-    reference: "REQ-1006",
-    title: "Community garden starter packs",
-    category: "Community Development",
-    location: "Nakuru",
-    status: "approved",
-    summary: "Seedlings, hand tools, and soil for a fictional community garden in Nakuru.",
-    resource: "Garden starter kits",
-    quantity: 40,
-    urgency: "Medium",
-    submittedOn: "18 Nov 2026",
-  },
-  {
-    reference: "REQ-1005",
-    title: "Learning materials for rural schools",
-    category: "Education",
-    location: "Kitui",
-    status: "approved",
-    summary: "Exercise books and classroom kits for a fictional school request in Kitui.",
-    resource: "Learning kits",
-    quantity: 120,
-    urgency: "Medium",
-    submittedOn: "16 Nov 2026",
-  },
-  {
-    reference: "REQ-1004",
-    title: "Emergency shelter support in Kisumu",
-    category: "Shelter",
-    location: "Kisumu",
-    status: "approved",
-    summary: "Temporary shelter materials recorded for a fictional response in Kisumu.",
-    resource: "Shelter kits",
-    quantity: 25,
-    urgency: "High",
-    submittedOn: "14 Nov 2026",
-  },
-  {
-    reference: "REQ-1003",
-    title: "Medical supplies for community outreach",
-    category: "Healthcare",
-    location: "Nairobi",
-    status: "approved",
-    summary: "Basic clinic supplies for a fictional community outreach day in Nairobi.",
-    resource: "Medical kits",
-    quantity: 60,
-    urgency: "High",
-    submittedOn: "12 Nov 2026",
-  },
-  {
-    reference: "REQ-1002",
-    title: "Food assistance for vulnerable households",
-    category: "Food Security",
-    location: "Garissa",
-    status: "approved",
-    summary: "Household food packages for a fictional request in Garissa.",
-    resource: "Food parcels",
-    quantity: 80,
-    urgency: "High",
-    submittedOn: "9 Nov 2026",
-  },
-  {
-    reference: "REQ-1001",
-    title: "School supplies for students in Turkana",
-    category: "Education",
-    location: "Turkana",
-    status: "approved",
-    summary: "Help a community learning centre prepare 50 students for the new term with essential school materials.",
-    resource: "Exercise books",
-    quantity: 500,
-    urgency: "High",
-    submittedOn: "6 Nov 2026",
-  },
-];
 
 export const assistanceProcess: AssistanceStep[] = [
   {
@@ -170,14 +132,6 @@ export function requestStats(requests: BeneficiaryRequest[]) {
     approved: requests.filter((request) => request.status === "approved").length,
     fulfilled: requests.filter((request) => request.status === "fulfilled").length,
   };
-}
-
-export function nextReference(requests: BeneficiaryRequest[]) {
-  const max = requests.reduce((highest, request) => {
-    const value = Number(request.reference.replace(/\D/g, ""));
-    return Number.isFinite(value) ? Math.max(highest, value) : highest;
-  }, 1000);
-  return `REQ-${max + 1}`;
 }
 
 export function deliveryLabel(request: BeneficiaryRequest, index: number) {

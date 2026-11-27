@@ -4,9 +4,11 @@ from app.errors import ApiError
 from app.extensions import db
 from app.models.assessment import Assessment
 from app.models.assistance_request import AssistanceRequest
+from app.models.opportunity import Opportunity
 from app.models.organization import Organization
 from app.schemas.assessment_schema import AssessmentCreateSchema, AssessmentSchema
 from app.schemas.request_schema import AssistanceRequestSchema
+from app.services import notification_service
 from app.utils.decorators import get_current_user, role_required
 from app.utils.pagination import paginate
 from app.utils.validators import parse_body
@@ -21,6 +23,43 @@ def get_agency_request(request_id, user_id, lock=False):
     request = db.session.scalar(stmt)
     if request is None: raise ApiError(404, "not_found", "Assistance request not found")
     return request
+
+
+def publish_request_for_donors(assistance_request: AssistanceRequest) -> None:
+    """Mark the request published and ensure a donor-facing opportunity exists."""
+    assistance_request.stage = "Published"
+    existing = db.session.scalar(
+        select(Opportunity).where(Opportunity.request_id == assistance_request.id)
+    )
+    if existing is not None:
+        if existing.stage not in ("Published", "Pledged"):
+            existing.stage = "Published"
+    else:
+        db.session.add(
+            Opportunity(
+                title=assistance_request.title,
+                category=assistance_request.category,
+                county=assistance_request.county,
+                description=assistance_request.summary,
+                urgency=assistance_request.urgency,
+                target_qty=assistance_request.quantity,
+                pledged_qty=0,
+                stage="Published",
+                organization_id=assistance_request.organization_id,
+                request_id=assistance_request.id,
+            )
+        )
+
+    notification_service.notify(
+        assistance_request.beneficiary_id,
+        "Request approved",
+        (
+            f"{assistance_request.reference or assistance_request.id} was approved "
+            "and published for donors."
+        ),
+        kind="request",
+        commit=False,
+    )
 
 @bp.post("/api/requests/<int:request_id>/assessment")
 @role_required("agency")
@@ -38,8 +77,8 @@ def create_assessment(request_id):
     db.session.add(assessment)
 
     if data["outcome"] == "approved":
-        request.stage = "Assessed"
         request.priority = data["priority"]
+        publish_request_for_donors(request)
 
     db.session.commit()
     return jsonify({"assessment": AssessmentSchema().dump(assessment)}), 201
@@ -72,8 +111,8 @@ def update_assessment(request_id):
     assessment.assessor_id = user.id
 
     if data["outcome"] == "approved":
-        request.stage = "Assessed"
         request.priority = data["priority"]
+        publish_request_for_donors(request)
 
     db.session.commit()
     return jsonify({"assessment": AssessmentSchema().dump(assessment)})

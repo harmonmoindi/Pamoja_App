@@ -108,15 +108,30 @@ def test_create_schema_accepts_valid_payload():
         "resource": "Exercise books",
         "quantity": 10,
         "urgency": "High",
+        "organizationId": 1,
     })
     assert data["quantity"] == 10
     assert data["urgency"] == "High"
+    assert data["organization_id"] == 1
 
 
 def test_create_schema_rejects_blank_title():
     with pytest.raises(ValidationError):
         AssistanceRequestCreateSchema().load({
             "title": " ",
+            "category": "Education",
+            "county": "Turkana",
+            "summary": "Need books",
+            "resource": "Exercise books",
+            "quantity": 10,
+            "organizationId": 1,
+        })
+
+
+def test_create_schema_requires_organization():
+    with pytest.raises(ValidationError):
+        AssistanceRequestCreateSchema().load({
+            "title": "School supplies",
             "category": "Education",
             "county": "Turkana",
             "summary": "Need books",
@@ -130,8 +145,9 @@ def test_receipt_schema_rejects_unknown_outcome():
         ReceiptCreateSchema().load({"deliveryId": 1, "outcome": "maybe"})
 
 
-def test_beneficiary_can_create_a_request(client, make_user, login):
+def test_beneficiary_can_create_a_request(client, make_user, login, make_organization):
     make_user(role="beneficiary", email="grace@example.org", name="Grace")
+    org = make_organization(name="Garissa Community Support Trust")
     token = login("grace@example.org").get_json()["token"]
 
     res = client.post(
@@ -144,6 +160,7 @@ def test_beneficiary_can_create_a_request(client, make_user, login):
             "resource": "Food parcels",
             "quantity": 80,
             "urgency": "High",
+            "organizationId": org.id,
         },
         headers=bearer(token),
     )
@@ -153,10 +170,12 @@ def test_beneficiary_can_create_a_request(client, make_user, login):
     assert body["stage"] == "Need identified"
     assert body["reference"].startswith("PAM-REQ-")
     assert body["quantity"] == 80
+    assert body["organizationId"] == org.id
 
 
-def test_donor_cannot_create_a_request(client, make_user, login):
+def test_donor_cannot_create_a_request(client, make_user, login, make_organization):
     make_user(role="donor", email="donor@example.org")
+    org = make_organization()
     token = login("donor@example.org").get_json()["token"]
 
     res = client.post(
@@ -168,6 +187,7 @@ def test_donor_cannot_create_a_request(client, make_user, login):
             "summary": "Household food packages",
             "resource": "Food parcels",
             "quantity": 80,
+            "organizationId": org.id,
         },
         headers=bearer(token),
     )

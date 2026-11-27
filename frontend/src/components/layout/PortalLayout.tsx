@@ -1,8 +1,8 @@
 import { useState } from "react";
-import { Outlet, useLocation } from "react-router";
+import { Link, Outlet, useLocation } from "react-router";
 import { Bell, ChevronRight, Clock3, Menu } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
-import { PortalRole } from "@/data/constants/navigation";
+import { PortalRole, roleNav } from "@/data/constants/navigation";
 import { PortalSidebar } from "./PortalSidebar";
 
 export function PortalLayout({ role }: { role: PortalRole }) {
@@ -12,6 +12,7 @@ export function PortalLayout({ role }: { role: PortalRole }) {
 
   const name = user?.name ?? "Pamoja member";
   const pending = user?.status === "pending";
+  const notificationsPath = roleNav[role].find(([, href]) => href.endsWith("/notifications"))?.[1];
 
   return (
     <div className="portal-shell">
@@ -26,10 +27,17 @@ export function PortalLayout({ role }: { role: PortalRole }) {
             <b>{location.pathname.split("/").pop()?.replace("-", " ") || "Overview"}</b>
           </div>
           <div className="profile">
-            <button aria-label="Notifications">
-              <Bell size={20} />
-              <i />
-            </button>
+            {notificationsPath ? (
+              <Link to={notificationsPath} aria-label="Notifications">
+                <Bell size={20} />
+                <i />
+              </Link>
+            ) : (
+              <button aria-label="Notifications" type="button">
+                <Bell size={20} />
+                <i />
+              </button>
+            )}
             <span className="avatar">{name.slice(0, 1)}</span>
             <div>
               <b>{name}</b>

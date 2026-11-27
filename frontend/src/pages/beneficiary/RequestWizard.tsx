@@ -1,9 +1,12 @@
-import { FormEvent, useState } from "react";
+import { FormEvent, useEffect, useState } from "react";
 import { AlertTriangle } from "lucide-react";
 import { useNavigate } from "react-router";
 import { BeneficiaryPage } from "@/components/beneficiary/BeneficiaryPage";
 import { useBeneficiaryRequests } from "@/components/beneficiary/BeneficiaryRequests";
+import { Button } from "@/components/ui/Button";
 import { requestCategories, requestUrgencies } from "@/data/mock/beneficiaryRequests";
+import { listVerifiedOrganizations } from "@/services/requestService";
+import type { VerifiedOrganization } from "@/types/request";
 
 const stepLabels = ["Choose a category", "Describe your need", "Review & submit"] as const;
 
@@ -18,12 +21,48 @@ export default function RequestWizard() {
   const [resource, setResource] = useState("");
   const [quantity, setQuantity] = useState("1");
   const [urgency, setUrgency] = useState<(typeof requestUrgencies)[number]>("Medium");
+  const [organizationId, setOrganizationId] = useState<number | "">("");
+  const [organizations, setOrganizations] = useState<VerifiedOrganization[]>([]);
+  const [loadingOrgs, setLoadingOrgs] = useState(true);
+  const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
 
+  useEffect(() => {
+    let active = true;
+    async function loadOrganizations() {
+      setLoadingOrgs(true);
+      try {
+        const page = await listVerifiedOrganizations();
+        if (!active) return;
+        setOrganizations(page.items);
+        if (page.items.length === 1) {
+          setOrganizationId(page.items[0].id);
+        }
+      } catch (err) {
+        if (!active) return;
+        setError(err instanceof Error ? err.message : "Unable to load verified agencies.");
+      } finally {
+        if (active) setLoadingOrgs(false);
+      }
+    }
+    void loadOrganizations();
+    return () => {
+      active = false;
+    };
+  }, []);
+
+  const selectedOrganization = organizations.find((org) => org.id === organizationId);
+
   const continueStep = () => {
-    if (step === 0 && !category) {
-      setError("Select an assistance category to continue.");
-      return;
+    if (step === 0) {
+      if (!category) {
+        setError("Select an assistance category to continue.");
+        return;
+      }
+      if (!organizationId) {
+        setError("Select a verified agency to review your request.");
+        return;
+      }
     }
     if (step === 1) {
       if (!title.trim() || !location.trim() || !summary.trim() || !resource.trim()) {
@@ -40,44 +79,59 @@ export default function RequestWizard() {
     setStep((current) => Math.min(current + 1, 2));
   };
 
-  const submit = (event: FormEvent) => {
+  const submit = async (event: FormEvent) => {
     event.preventDefault();
+    if (submitting) return;
+    if (!organizationId) {
+      setError("Select a verified agency to review your request.");
+      return;
+    }
+
     const qty = Number(quantity);
-    const created = addRequest({
-      title: title.trim(),
-      category,
-      location: location.trim(),
-      summary: summary.trim(),
-      resource: resource.trim(),
-      quantity: qty,
-      urgency,
-    });
-    navigate(`/beneficiary/requests/${created.reference}`);
+    setSubmitting(true);
+    setError("");
+    try {
+      const created = await addRequest({
+        title: title.trim(),
+        category,
+        location: location.trim(),
+        summary: summary.trim(),
+        resource: resource.trim(),
+        quantity: qty,
+        urgency,
+        organizationId,
+      });
+      navigate(`/beneficiary/requests/${encodeURIComponent(created.reference)}`);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Unable to submit your request.");
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   return (
     <BeneficiaryPage
       title="Request assistance"
-      description="A guided three-step request form for fictional demonstration data."
+      description="Submit a need for agency review. Approved requests are published for donors."
     >
-      <form className="bn-panel bn-form bn-section" onSubmit={submit}>
-        <div className="bn-alert" role="note">
+      <form className="form-card" onSubmit={(event) => void submit(event)} style={{ maxWidth: 760 }}>
+        <div className="demo-warning" role="note">
           <AlertTriangle size={18} aria-hidden="true" />
           <p>Demo only: please do not submit real identities, personal stories, medical details, contact information, or sensitive documents.</p>
         </div>
 
-        <div className="bn-progress" aria-hidden="true">
-          {stepLabels.map((_, index) => (
-            <span key={stepLabels[index]} className={index <= step ? "done" : ""} />
+        <div className="wizard-progress" aria-hidden="true">
+          {stepLabels.map((label, index) => (
+            <span key={label} className={index <= step ? "done" : ""} />
           ))}
         </div>
-        <div className="bn-stepmeta">
+        <div className="wizard-stepmeta">
           <strong>Step {step + 1} of 3</strong>
           <span>{stepLabels[step]}</span>
         </div>
 
         {step === 0 && (
-          <div className="bn-stepbody">
+          <div>
             <label>
               Assistance category
               <select value={category} onChange={(event) => setCategory(event.target.value)}>
@@ -88,12 +142,33 @@ export default function RequestWizard() {
                 ))}
               </select>
             </label>
-            <p className="bn-help">Select the category that best describes the type of resources needed.</p>
+            <label>
+              Reviewing agency
+              <select
+                value={organizationId === "" ? "" : String(organizationId)}
+                onChange={(event) =>
+                  setOrganizationId(event.target.value ? Number(event.target.value) : "")
+                }
+                disabled={loadingOrgs || organizations.length === 0}
+              >
+                <option value="">
+                  {loadingOrgs ? "Loading agencies..." : "Select a verified agency"}
+                </option>
+                {organizations.map((org) => (
+                  <option key={org.id} value={org.id}>
+                    {org.name}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <p style={{ color: "var(--muted)", fontSize: 12, marginTop: -8 }}>
+              Your request is sent to the selected agency for review. After approval it appears on the donor page.
+            </p>
           </div>
         )}
 
         {step === 1 && (
-          <div className="bn-stepbody">
+          <div>
             <label>
               Request title
               <input
@@ -121,7 +196,7 @@ export default function RequestWizard() {
                 maxLength={280}
               />
             </label>
-            <div className="bn-form-grid">
+            <div className="field-grid">
               <label>
                 Resource required
                 <input
@@ -155,11 +230,15 @@ export default function RequestWizard() {
         )}
 
         {step === 2 && (
-          <div className="bn-stepbody">
-            <dl className="bn-review">
+          <div>
+            <dl className="review-grid">
               <div>
                 <dt>Category</dt>
                 <dd>{category}</dd>
+              </div>
+              <div>
+                <dt>Agency</dt>
+                <dd>{selectedOrganization?.name ?? "Not selected"}</dd>
               </div>
               <div>
                 <dt>Title</dt>
@@ -184,30 +263,39 @@ export default function RequestWizard() {
                 <dd>{summary.trim()}</dd>
               </div>
             </dl>
-            <p className="bn-help">Submitting saves this fictional request in local browser storage only.</p>
+            <p style={{ color: "var(--muted)", fontSize: 12 }}>
+              Submitting sends this request to the agency portal for review. Approved needs are published for donors.
+            </p>
           </div>
         )}
 
         {error && (
-          <p className="bn-error" role="alert">
+          <p className="error-text" role="alert">
             {error}
           </p>
         )}
 
-        <div className={`bn-form-actions ${step === 0 ? "start" : ""}`}>
+        <div className="form-actions" style={step === 0 ? { justifyContent: "flex-start" } : undefined}>
           {step > 0 && (
-            <button className="bn-secondary" type="button" onClick={() => { setError(""); setStep((current) => current - 1); }}>
+            <Button
+              variant="outline"
+              disabled={submitting}
+              onClick={() => {
+                setError("");
+                setStep((current) => current - 1);
+              }}
+            >
               ← Back
-            </button>
+            </Button>
           )}
           {step < 2 ? (
-            <button className="bn-primary" type="button" onClick={continueStep}>
-              {step === 0 ? "Continue" : "Review request"} <span aria-hidden="true">→</span>
-            </button>
+            <Button onClick={continueStep}>
+              {step === 0 ? "Continue" : "Review request"} →
+            </Button>
           ) : (
-            <button className="bn-primary" type="submit">
-              Submit demonstration request
-            </button>
+            <Button type="submit" disabled={submitting}>
+              {submitting ? "Submitting..." : "Submit assistance request"}
+            </Button>
           )}
         </div>
       </form>
