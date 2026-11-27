@@ -8,6 +8,7 @@ from app.models.opportunity import Opportunity
 from app.models.organization import Organization
 from app.schemas.assessment_schema import AssessmentCreateSchema, AssessmentSchema
 from app.schemas.request_schema import AssistanceRequestSchema
+from app.services import notification_service
 from app.utils.decorators import get_current_user, role_required
 from app.utils.pagination import paginate
 from app.utils.validators import parse_body
@@ -33,21 +34,31 @@ def publish_request_for_donors(assistance_request: AssistanceRequest) -> None:
     if existing is not None:
         if existing.stage not in ("Published", "Pledged"):
             existing.stage = "Published"
-        return
-
-    db.session.add(
-        Opportunity(
-            title=assistance_request.title,
-            category=assistance_request.category,
-            county=assistance_request.county,
-            description=assistance_request.summary,
-            urgency=assistance_request.urgency,
-            target_qty=assistance_request.quantity,
-            pledged_qty=0,
-            stage="Published",
-            organization_id=assistance_request.organization_id,
-            request_id=assistance_request.id,
+    else:
+        db.session.add(
+            Opportunity(
+                title=assistance_request.title,
+                category=assistance_request.category,
+                county=assistance_request.county,
+                description=assistance_request.summary,
+                urgency=assistance_request.urgency,
+                target_qty=assistance_request.quantity,
+                pledged_qty=0,
+                stage="Published",
+                organization_id=assistance_request.organization_id,
+                request_id=assistance_request.id,
+            )
         )
+
+    notification_service.notify(
+        assistance_request.beneficiary_id,
+        "Request approved",
+        (
+            f"{assistance_request.reference or assistance_request.id} was approved "
+            "and published for donors."
+        ),
+        kind="request",
+        commit=False,
     )
 
 @bp.post("/api/requests/<int:request_id>/assessment")

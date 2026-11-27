@@ -67,3 +67,32 @@ class AuditEventSchema(CamelSchema):
 
     def get_timestamp(self, log):
         return log.created_at.isoformat()
+
+
+class OversightRequestSchema(CamelSchema):
+    """Matches OversightRequest in frontend/src/types/admin.ts."""
+
+    id = fields.Int(dump_only=True)
+    reference = fields.Str()
+    title = fields.Str()
+    category = fields.Str()
+    county = fields.Str()
+    agency = fields.Method("get_agency")
+    stage = fields.Str()
+    priority = fields.Method("get_priority")
+    updated_on = fields.Method("get_updated_on")
+
+    def get_agency(self, assistance_request):
+        organization = assistance_request.organization
+        return organization.name if organization is not None else "Unassigned"
+
+    def get_priority(self, assistance_request):
+        raw = (assistance_request.priority or assistance_request.urgency or "").strip().lower()
+        if raw in {"critical", "urgent"}:
+            return "Urgent"
+        if raw in {"high", "high priority"}:
+            return "High priority"
+        return "Standard"
+
+    def get_updated_on(self, assistance_request):
+        return assistance_request.updated_at.date().isoformat()

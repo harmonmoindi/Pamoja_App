@@ -6,8 +6,28 @@ import { trackingStepsFor } from "@/data/mock/beneficiaryRequests";
 
 export default function RequestDetail() {
   const { reference = "" } = useParams();
-  const { requests, confirmReceipt } = useBeneficiaryRequests();
-  const request = requests.find((item) => item.reference.toLowerCase() === reference.toLowerCase());
+  const { requests, loading, error, refresh } = useBeneficiaryRequests();
+  const request = requests.find(
+    (item) => item.reference.toLowerCase() === decodeURIComponent(reference).toLowerCase(),
+  );
+
+  if (loading) {
+    return (
+      <BeneficiaryPage title="Loading request" description="Fetching your assistance request.">
+        <p className="bn-empty bn-section">Loading...</p>
+      </BeneficiaryPage>
+    );
+  }
+
+  if (error) {
+    return (
+      <BeneficiaryPage title="Unable to load request" description={error}>
+        <button className="bn-secondary bn-section" type="button" onClick={() => void refresh()}>
+          Try again
+        </button>
+      </BeneficiaryPage>
+    );
+  }
 
   if (!request) {
     return (
@@ -31,7 +51,9 @@ export default function RequestDetail() {
     >
       <div className="bn-dash bn-section">
         <section className="bn-panel bn-detail">
-          <span className={`bn-status ${request.status === "approved" ? "" : request.status.replace(" ", "-")}`}>{request.status}</span>
+          <span className={`bn-status ${request.status === "approved" ? "" : request.status.replace(" ", "-")}`}>
+            {request.status}
+          </span>
           <dl>
             <div>
               <dt>Category</dt>
@@ -61,14 +83,16 @@ export default function RequestDetail() {
             </div>
           </dl>
           <p>{request.summary}</p>
-          {request.status === "approved" && request.stage === "Delivered" && (
-            <button className="bn-primary" type="button" onClick={() => confirmReceipt(request.reference)}>
+          {request.status === "under review" && (
+            <p className="bn-note">Waiting for agency review. Once approved, this need is published for donors and visible to admin oversight.</p>
+          )}
+          {request.stage === "Published" && <p className="bn-note">Approved and published for donors.</p>}
+          {request.stage === "Delivered" && (
+            <Link className="bn-primary" to="/beneficiary/receipt">
               Confirm receipt
-            </button>
+            </Link>
           )}
           {request.status === "fulfilled" && <p className="bn-note">Receipt confirmed for this request.</p>}
-          {request.status === "under review" && <p className="bn-note">Waiting for agency review. Once approved, this need is published for donors.</p>}
-          {request.stage === "Published" && <p className="bn-note">Approved and published for donors.</p>}
         </section>
         <section className="bn-panel bn-process">
           <h2>Assistance journey</h2>

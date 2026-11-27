@@ -72,9 +72,10 @@ export interface DuplicatePair {
 export type Priority = "Urgent" | "High priority" | "Standard";
 
 export interface OversightRequest {
+  id: number;
   reference: string;
   title: string;
-  category: Category;
+  category: string;
   county: string;
   agency: string;
   stage: LifecycleStage;

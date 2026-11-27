@@ -1,80 +1,94 @@
-import { useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import { AlertTriangle } from "lucide-react";
 import { Link } from "react-router";
 import { BeneficiaryPage } from "@/components/beneficiary/BeneficiaryPage";
-import { useBeneficiaryRequests } from "@/components/beneficiary/BeneficiaryRequests";
+import {
+  notificationService,
+  type ApiNotification,
+} from "@/services/notificationService";
 
-type Note = {
-  id: string;
-  title: string;
-  body: string;
-  to: string;
-  unread: boolean;
-};
+function linkFor(note: ApiNotification) {
+  if (note.kind === "delivery") return "/beneficiary/receipt";
+  if (note.kind === "request") return "/beneficiary/requests";
+  return "/beneficiary/dashboard";
+}
 
 export default function Notifications() {
-  const { requests } = useBeneficiaryRequests();
-  const seed = useMemo<Note[]>(
-    () => [
-      {
-        id: "welcome",
-        title: "Welcome to your Pamoja demonstration workspace",
-        body: "Fictional notification",
-        to: "/beneficiary/dashboard",
-        unread: true,
-      },
-      {
-        id: "privacy",
-        title: "Demo reminder: do not enter real personal data",
-        body: "Fictional notification",
-        to: "/beneficiary/request",
-        unread: true,
-      },
-      {
-        id: "tracking",
-        title: requests[0]
-          ? `${requests[0].reference} is recorded as ${requests[0].status}`
-          : "Request tracking is ready in this workspace",
-        body: requests[0]
-          ? `${requests[0].title} · Fictional notification`
-          : "Fictional notification",
-        to: requests[0] ? `/beneficiary/requests/${requests[0].reference}` : "/beneficiary/tracking",
-        unread: false,
-      },
-    ],
-    [requests],
-  );
-  const [notes, setNotes] = useState<Note[] | null>(null);
-  const visible = notes ?? seed;
+  const [notes, setNotes] = useState<ApiNotification[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
+  const [busy, setBusy] = useState(false);
 
-  const markAllRead = () => {
-    setNotes(visible.map((note) => ({ ...note, unread: false })));
+  async function load() {
+    setLoading(true);
+    setError("");
+    try {
+      const page = await notificationService.getAll();
+      setNotes(page.items);
+    } catch (err) {
+      setNotes([]);
+      setError(err instanceof Error ? err.message : "Unable to load notifications.");
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  useEffect(() => {
+    void load();
+  }, []);
+
+  const markAllRead = async () => {
+    if (busy) return;
+    setBusy(true);
+    try {
+      await notificationService.markAllAsRead();
+      setNotes((current) => current.map((note) => ({ ...note, isRead: true })));
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Unable to mark notifications as read.");
+    } finally {
+      setBusy(false);
+    }
   };
 
   return (
     <BeneficiaryPage
       title="Notifications"
-      description="Demonstration activity and updates from across the platform."
+      description="Updates from request review, delivery, and platform activity."
       action={
-        <button className="bn-secondary" type="button" onClick={markAllRead}>
+        <button className="bn-secondary" type="button" onClick={() => void markAllRead()} disabled={busy || loading}>
           Mark all read
         </button>
       }
     >
-      <ul className="bn-notes bn-section">
-        {visible.map((note) => (
-          <li key={note.id} className={note.unread ? "unread" : ""}>
-            <span className="bn-note-icon" aria-hidden="true">
-              <AlertTriangle size={16} />
-            </span>
-            <div>
-              <Link to={note.to}>{note.title}</Link>
-              <p>{note.body}</p>
-            </div>
-            {note.unread ? <i className="bn-unread" aria-label="Unread" /> : <span className="bn-read">Read</span>}
-          </li>
-        ))}
-      </ul>
+      {error && (
+        <p className="bn-error bn-section" role="alert">
+          {error}{" "}
+          <button className="bn-link" type="button" onClick={() => void load()}>
+            Try again
+          </button>
+        </p>
+      )}
+
+      {loading ? (
+        <p className="bn-empty bn-section">Loading notifications...</p>
+      ) : notes.length === 0 ? (
+        <p className="bn-empty bn-section">No notifications yet. Submit a request to get started.</p>
+      ) : (
+        <ul className="bn-notes bn-section">
+          {notes.map((note) => (
+            <li key={note.id} className={note.isRead ? "" : "unread"}>
+              <span className="bn-note-icon" aria-hidden="true">
+                <AlertTriangle size={16} />
+              </span>
+              <div>
+                <Link to={linkFor(note)}>{note.title}</Link>
+                <p>{note.body}</p>
+              </div>
+              {note.isRead ? <span className="bn-read">Read</span> : <i className="bn-unread" aria-label="Unread" />}
+            </li>
+          ))}
+        </ul>
+      )}
     </BeneficiaryPage>
   );
 }

@@ -6,7 +6,7 @@ from app.extensions import db
 from app.models.assistance_request import AssistanceRequest
 from app.models.organization import Organization
 from app.schemas.request_schema import AssistanceRequestCreateSchema, AssistanceRequestSchema
-from app.services import audit_service
+from app.services import audit_service, notification_service
 from app.utils.decorators import get_current_user, role_required
 from app.utils.pagination import paginate
 from app.utils.reference_ids import make_reference
@@ -69,6 +69,21 @@ def create_request():
         actor=beneficiary,
         entity_type="assistance_request",
         entity_id=assistance_request.id,
+        commit=False,
+    )
+    if organization.owner_id is not None:
+        notification_service.notify(
+            organization.owner_id,
+            "New assistance request",
+            f"{assistance_request.reference}: {assistance_request.title} awaits review.",
+            kind="request",
+            commit=False,
+        )
+    notification_service.notify(
+        beneficiary.id,
+        "Request submitted",
+        f"{assistance_request.reference} was sent to {organization.name} for review.",
+        kind="request",
         commit=False,
     )
     db.session.commit()

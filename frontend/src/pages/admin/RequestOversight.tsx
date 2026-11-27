@@ -1,12 +1,12 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Search } from "lucide-react";
 import { Metric } from "@/components/ui/Metric";
 import { PageHead } from "@/components/ui/PageHead";
 import { Progress } from "@/components/ui/Progress";
 import { Status } from "@/components/ui/Status";
 import { lifecycle, LifecycleStage } from "@/data/constants/lifecycle";
-import { adminRequests } from "@/data/mock/adminRequests";
-import { Priority } from "@/types/admin";
+import { listOversightRequests } from "@/services/adminService";
+import { OversightRequest, Priority } from "@/types/admin";
 import { formatDate } from "@/utils/format";
 
 const priorities: Priority[] = ["Urgent", "High priority", "Standard"];
@@ -26,43 +26,69 @@ function stageTone(stage: LifecycleStage): string {
 const columns = "1.7fr 1fr 1fr 1.5fr 1.3fr 0.9fr 0.8fr";
 
 export default function RequestOversight() {
+  const [requests, setRequests] = useState<OversightRequest[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
   const [query, setQuery] = useState("");
   const [stage, setStage] = useState<"all" | LifecycleStage>("all");
   const [priority, setPriority] = useState<"all" | Priority>("all");
+  const [refreshKey, setRefreshKey] = useState(0);
 
-  const visible = useMemo(() => {
-    const q = query.trim().toLowerCase();
-    return adminRequests.filter(
-      (r) =>
-        (stage === "all" || r.stage === stage) &&
-        (priority === "all" || r.priority === priority) &&
-        (r.reference.toLowerCase().includes(q) ||
-          r.title.toLowerCase().includes(q) ||
-          r.agency.toLowerCase().includes(q)),
-    );
-  }, [query, stage, priority]);
+  useEffect(() => {
+    let active = true;
 
-  const completed = adminRequests.filter((r) => r.stage === "Delivered" || r.stage === "Confirmed").length;
-  const urgent = adminRequests.filter((r) => r.priority === "Urgent").length;
+    async function load() {
+      setLoading(true);
+      setError("");
+      try {
+        const page = await listOversightRequests({
+          q: query.trim() || undefined,
+          stage: stage === "all" ? undefined : stage,
+          perPage: 100,
+        });
+        if (!active) return;
+        setRequests(page.items);
+      } catch (err) {
+        if (!active) return;
+        setRequests([]);
+        setError(err instanceof Error ? err.message : "Unable to load assistance requests.");
+      } finally {
+        if (active) setLoading(false);
+      }
+    }
+
+    void load();
+    return () => {
+      active = false;
+    };
+  }, [query, stage, refreshKey]);
+
+  const visible = useMemo(
+    () => requests.filter((r) => priority === "all" || r.priority === priority),
+    [requests, priority],
+  );
+
+  const completed = requests.filter((r) => r.stage === "Delivered" || r.stage === "Confirmed").length;
+  const urgent = requests.filter((r) => r.priority === "Urgent").length;
 
   return (
     <>
       <PageHead
-        eyebrow="Demonstration workspace"
+        eyebrow="Admin workspace"
         title="Humanitarian request oversight"
-        description="Monitor request handling across participating agencies."
+        description="Monitor live assistance requests across participating agencies."
       />
 
       <div className="portal-metrics">
-        <Metric label="Total requests" value={String(adminRequests.length)} note="Across all agencies" tone="green" />
-        <Metric label="Urgent" value={String(urgent)} note="Need quick attention" tone="gold" />
+        <Metric label="Total requests" value={loading ? "…" : String(requests.length)} note="Across all agencies" tone="green" />
+        <Metric label="Urgent" value={loading ? "…" : String(urgent)} note="Need quick attention" tone="gold" />
         <Metric
           label="In progress"
-          value={String(adminRequests.length - completed)}
+          value={loading ? "…" : String(requests.length - completed)}
           note="Before delivery"
           tone="blue"
         />
-        <Metric label="Completed" value={String(completed)} note="Delivered or confirmed" tone="navy" />
+        <Metric label="Completed" value={loading ? "…" : String(completed)} note="Delivered or confirmed" tone="navy" />
       </div>
 
       <div className="panel">
@@ -91,7 +117,16 @@ export default function RequestOversight() {
               </option>
             ))}
           </select>
+          <button type="button" onClick={() => setRefreshKey((n) => n + 1)} disabled={loading}>
+            Refresh
+          </button>
         </div>
+
+        {error && (
+          <p role="alert" style={{ color: "var(--danger, #b91c1c)", padding: "8px 4px" }}>
+            {error}
+          </p>
+        )}
 
         <div style={{ overflowX: "auto" }}>
           <div className="data-table" style={{ minWidth: 980 }}>
@@ -104,30 +139,34 @@ export default function RequestOversight() {
               <span>Priority</span>
               <span>Updated</span>
             </div>
-            {visible.map((r) => (
-              <div className="table-row" key={r.reference} style={{ gridTemplateColumns: columns }}>
-                <div>
-                  <b>{r.title}</b>
-                  <br />
-                  <small style={{ color: "var(--muted)" }}>{r.reference}</small>
+            {!loading &&
+              visible.map((r) => (
+                <div className="table-row" key={r.id} style={{ gridTemplateColumns: columns }}>
+                  <div>
+                    <b>{r.title}</b>
+                    <br />
+                    <small style={{ color: "var(--muted)" }}>{r.reference}</small>
+                  </div>
+                  <span>{r.category}</span>
+                  <span>{r.county}</span>
+                  <span>{r.agency}</span>
+                  <div>
+                    <Status tone={stageTone(r.stage)}>{r.stage}</Status>
+                    <Progress value={Math.round(((lifecycle.indexOf(r.stage) + 1) / lifecycle.length) * 100)} tone={stageTone(r.stage)} />
+                  </div>
+                  <Status tone={priorityTone[r.priority]}>{r.priority}</Status>
+                  <span>{formatDate(r.updatedOn)}</span>
                 </div>
-                <span>{r.category}</span>
-                <span>{r.county}</span>
-                <span>{r.agency}</span>
-                <div>
-                  <Status tone={stageTone(r.stage)}>{r.stage}</Status>
-                  <Progress value={Math.round(((lifecycle.indexOf(r.stage) + 1) / lifecycle.length) * 100)} tone={stageTone(r.stage)} />
-                </div>
-                <Status tone={priorityTone[r.priority]}>{r.priority}</Status>
-                <span>{formatDate(r.updatedOn)}</span>
-              </div>
-            ))}
+              ))}
           </div>
         </div>
 
-        {visible.length === 0 && <p style={{ padding: "18px 4px" }}>No requests match your filters.</p>}
+        {loading && <p style={{ padding: "18px 4px" }}>Loading assistance requests…</p>}
+        {!loading && !error && visible.length === 0 && (
+          <p style={{ padding: "18px 4px" }}>No requests match your filters.</p>
+        )}
         <p style={{ marginTop: 12, color: "var(--muted)", fontSize: 11 }}>
-          Showing {visible.length} of {adminRequests.length} requests
+          Showing {visible.length} of {requests.length} requests
         </p>
       </div>
     </>

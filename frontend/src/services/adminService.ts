@@ -1,5 +1,15 @@
 import { api, Page } from "@/lib/apiClient";
-import { AdminOverview, Agency, AuditEvent, AuditKind, ChecklistItem, VerificationStatus } from "@/types/admin";
+import type { LifecycleStage } from "@/data/constants/lifecycle";
+import {
+  AdminOverview,
+  Agency,
+  AuditEvent,
+  AuditKind,
+  ChecklistItem,
+  OversightRequest,
+  Priority,
+  VerificationStatus,
+} from "@/types/admin";
 import { User, UserRole, UserStatus } from "@/types/user";
 
 // ---- Agency verification (admin only) ------------------------------------
@@ -17,6 +27,20 @@ export function decideAgency(id: number | string, decision: "approve" | "request
     body: { decision, adminNotes },
   });
 }
+
+// ---- Request oversight (admin only) --------------------------------------
+export function listOversightRequests(
+  params: {
+    q?: string;
+    stage?: LifecycleStage;
+    page?: number;
+    perPage?: number;
+  } = {},
+) {
+  return api<Page<OversightRequest>>("/admin/requests", { params });
+}
+
+export type { Priority };
 
 // ---- Audit log and dashboard (admin only) --------------------------------
 export function listAudit(params: { q?: string; kind?: AuditKind; page?: number; perPage?: number } = {}) {

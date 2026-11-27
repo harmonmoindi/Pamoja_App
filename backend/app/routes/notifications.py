@@ -25,37 +25,37 @@ def _get_own_notification(notification_id: int, user_id: int) -> Notification:
 
 
 @bp.get("")
-@role_required("beneficiary")
+@role_required("beneficiary", "agency", "donor", "admin")
 def list_notifications():
-    """The logged-in beneficiary's notifications, newest first."""
-    beneficiary = get_current_user()
+    """The logged-in user's notifications, newest first."""
+    user = get_current_user()
     stmt = (
         select(Notification)
-        .where(Notification.user_id == beneficiary.id)
+        .where(Notification.user_id == user.id)
         .order_by(Notification.created_at.desc(), Notification.id.desc())
     )
     return jsonify(paginate(stmt, NotificationSchema()))
 
 
 @bp.patch("/<int:notification_id>/read")
-@role_required("beneficiary")
+@role_required("beneficiary", "agency", "donor", "admin")
 def mark_read(notification_id):
-    """Mark one of the beneficiary's notifications as read."""
-    beneficiary = get_current_user()
-    note = _get_own_notification(notification_id, beneficiary.id)
+    """Mark one of the user's notifications as read."""
+    user = get_current_user()
+    note = _get_own_notification(notification_id, user.id)
     note.is_read = True
     db.session.commit()
     return jsonify({"notification": NotificationSchema().dump(note)})
 
 
 @bp.patch("/read-all")
-@role_required("beneficiary")
+@role_required("beneficiary", "agency", "donor", "admin")
 def mark_all_read():
-    """Mark every unread notification for the logged-in beneficiary as read."""
-    beneficiary = get_current_user()
+    """Mark every unread notification for the logged-in user as read."""
+    user = get_current_user()
     result = db.session.execute(
         update(Notification)
-        .where(Notification.user_id == beneficiary.id, Notification.is_read.is_(False))
+        .where(Notification.user_id == user.id, Notification.is_read.is_(False))
         .values(is_read=True, updated_at=utcnow())
     )
     db.session.commit()
