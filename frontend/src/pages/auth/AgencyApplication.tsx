@@ -28,7 +28,7 @@ export default function AgencyApplication() {
             </div>
           ))}
         </div>
-        <Button to="/register">
+        <Button to="/register?role=agency">
           Register your organization <ArrowRight />
         </Button>
       </div>
