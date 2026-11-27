@@ -15,7 +15,7 @@ Its guiding rule is **accountability: a pledge is a commitment, never a delivery
 
 **The first load can take about a minute.** The site is on a free hosting plan that sleeps when idle.
 
-On the sign-in page, use **Try Demo** to sign in instantly as any role, or type the details yourself. All demo accounts share the password `Pamoja#2026`.
+On the sign-in page, pick the role, then enter the email and password from the table below. All demo accounts share the password `Pamoja#2026`. The role you pick must match the account.
 
 | Role | Email | What you can do |
 |---|---|---|
@@ -257,7 +257,7 @@ The live site runs on **Render** (API and website) with a **Neon** PostgreSQL da
 ## Known limitations
 
 - **Demonstration data only.** Do not enter real personal information.
-- **Demo sign-in is public.** The "Try Demo" buttons exist so reviewers can explore every role. They should be removed before any real public deployment.
+- **Demo accounts are listed in this README** so reviewers can explore every role. They should be removed before any real public deployment.
 - **Free hosting.** The API sleeps when idle, so the first request after a break can take about a minute.
 - **Password reset is not available**, because the project has no email service.
 - **The needs map is schematic.** It shows generalized county areas, not real map tiles.
