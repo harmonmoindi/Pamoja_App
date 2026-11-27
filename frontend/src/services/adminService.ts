@@ -1,11 +1,12 @@
 import { api, Page } from "@/lib/apiClient";
-import type { LifecycleStage } from "@/data/constants/lifecycle";
 import {
   AdminOverview,
   Agency,
   AuditEvent,
   AuditKind,
   ChecklistItem,
+  DuplicatePair,
+  DuplicateStatus,
   OversightRequest,
   Priority,
   VerificationStatus,
@@ -30,14 +31,21 @@ export function decideAgency(id: number | string, decision: "approve" | "request
 
 // ---- Request oversight (admin only) --------------------------------------
 export function listOversightRequests(
-  params: {
-    q?: string;
-    stage?: LifecycleStage;
-    page?: number;
-    perPage?: number;
-  } = {},
+  params: { q?: string; stage?: string; priority?: Priority; page?: number; perPage?: number } = {},
 ) {
   return api<Page<OversightRequest>>("/admin/requests", { params });
+}
+
+export function listDuplicates(params: { status?: DuplicateStatus; page?: number; perPage?: number } = {}) {
+  return api<Page<DuplicatePair>>("/admin/duplicates", { params });
+}
+
+export function scanDuplicates() {
+  return api<{ created: number }>("/admin/duplicates/scan", { method: "POST" });
+}
+
+export function decideDuplicate(id: number | string, status: "separate" | "escalated") {
+  return api<{ duplicate: DuplicatePair }>(`/admin/duplicates/${id}`, { method: "PATCH", body: { status } });
 }
 
 export type { Priority };

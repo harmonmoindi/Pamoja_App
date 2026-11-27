@@ -1,21 +1,14 @@
 from flask import Blueprint, jsonify, request
 from sqlalchemy import func, or_, select
-from sqlalchemy.orm import joinedload
 
 from app.errors import ApiError
 from app.extensions import db
-from app.models.assistance_request import REQUEST_STAGES, AssistanceRequest
 from app.models.audit_log import AUDIT_KINDS, AuditLog
 from app.models.mixins import utcnow
 from app.models.organization import VERIFICATION_STATUSES, Organization
 from app.models.user import User
-from app.schemas.admin_schema import (
-    AdminAgencySchema,
-    AgencyDecisionSchema,
-    AgencyUpdateSchema,
-    AuditEventSchema,
-    OversightRequestSchema,
-)
+from app.models.duplicate_flag import DuplicateFlag
+from app.schemas.admin_schema import AdminAgencySchema, AgencyDecisionSchema, AgencyUpdateSchema, AuditEventSchema
 from app.services import audit_service, notification_service
 from app.utils.decorators import get_current_user, role_required
 from app.utils.pagination import paginate
@@ -113,36 +106,6 @@ def decide_agency(org_id):
     return jsonify({"agency": AdminAgencySchema().dump(org)})
 
 
-# ---------------------------------------------------------------- request oversight
-@bp.get("/requests")
-@role_required("admin")
-def list_requests():
-    """All assistance requests across agencies. Filters: ?q=  ?stage=Need identified|..."""
-    stmt = (
-        select(AssistanceRequest)
-        .options(joinedload(AssistanceRequest.organization))
-        .outerjoin(Organization, AssistanceRequest.organization_id == Organization.id)
-        .order_by(AssistanceRequest.updated_at.desc(), AssistanceRequest.id.desc())
-    )
-
-    q = request.args.get("q", "").strip().lower()
-    if q:
-        like = f"%{q}%"
-        stmt = stmt.where(
-            or_(
-                func.lower(AssistanceRequest.reference).like(like),
-                func.lower(AssistanceRequest.title).like(like),
-                func.lower(Organization.name).like(like),
-            )
-        )
-
-    stage = request.args.get("stage")
-    if stage in REQUEST_STAGES:
-        stmt = stmt.where(AssistanceRequest.stage == stage)
-
-    return jsonify(paginate(stmt, OversightRequestSchema()))
-
-
 # ---------------------------------------------------------------- audit log
 @bp.get("/audit")
 @role_required("admin")
@@ -184,7 +147,9 @@ def overview():
     ) or 0
     verified_orgs = db.session.scalars(select(Organization).where(Organization.verification_status == "verified")).all()
     counties = {county for org in verified_orgs for county in (org.counties or [])}
-    flagged = 0
+    flagged = db.session.scalar(
+        select(func.count(DuplicateFlag.id)).where(DuplicateFlag.status == "needs-review")
+    ) or 0
 
     return jsonify(
         {

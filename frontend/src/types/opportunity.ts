@@ -25,6 +25,8 @@ export interface Opportunity {
   county: string;
   targetAmount: number;
   raisedAmount: number;
+  targetQuantity?: number;
+  pledgedQuantity?: number;
   beneficiaries: number;
   urgency: "Low" | "Medium" | "High" | "Critical";
   status: OpportunityStatus;

@@ -32,7 +32,7 @@ function RequestSide({ label, request }: { label: string; request: RequestSummar
 
 type Props = {
   pair: DuplicatePair;
-  onDecide?: (id: string, decision: "separate" | "escalated") => void;
+  onDecide?: (id: string | number, decision: "separate" | "escalated") => void;
 };
 
 export function DuplicateReview({ pair, onDecide }: Props) {

@@ -50,7 +50,7 @@ export interface AuditEvent {
 export interface RequestSummary {
   reference: string;
   title: string;
-  category: Category;
+  category: Category | string;
   county: string;
   /** ISO date */
   submittedOn: string;
@@ -59,7 +59,7 @@ export interface RequestSummary {
 export type DuplicateStatus = "needs-review" | "separate" | "escalated";
 
 export interface DuplicatePair {
-  id: string;
+  id: number | string;
   status: DuplicateStatus;
   /** Why the system flagged the pair, e.g. "Same category" */
   signals: string[];
@@ -75,10 +75,10 @@ export interface OversightRequest {
   id: number;
   reference: string;
   title: string;
-  category: string;
+  category: Category | string;
   county: string;
   agency: string;
-  stage: LifecycleStage;
+  stage: LifecycleStage | string;
   priority: Priority;
   /** ISO date */
   updatedOn: string;

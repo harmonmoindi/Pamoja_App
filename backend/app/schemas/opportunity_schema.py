@@ -1,3 +1,4 @@
+from decimal import Decimal
 from marshmallow import fields
 
 from app.schemas import CamelSchema
@@ -22,7 +23,17 @@ class OpportunitySchema(CamelSchema):
         dump_only=True,
     )
 
-    raised_amount = fields.Float(
+    raised_amount = fields.Method(
+        "get_raised_amount",
+        dump_only=True,
+    )
+
+    target_quantity = fields.Float(
+        attribute="target_qty",
+        dump_only=True,
+    )
+
+    pledged_quantity = fields.Float(
         attribute="pledged_qty",
         dump_only=True,
     )
@@ -46,12 +57,24 @@ class OpportunitySchema(CamelSchema):
 
     created_at = fields.DateTime(dump_only=True)
 
+    def get_raised_amount(self, opportunity):
+        total = sum(
+            (
+                donation.amount
+                for donation in opportunity.donations
+                if donation.status == "successful"
+                and not donation.is_simulated
+            ),
+            Decimal("0.00"),
+        )
+
+        return float(total)
+
     def get_location(self, opportunity):
         return opportunity.county
 
     def get_beneficiaries(self, opportunity):
-        # The current Opportunity model has no beneficiaries column.
-        # Return zero rather than inventing a count.
+        # No beneficiaries column exists on Opportunity.
         return 0
 
     def get_status(self, opportunity):
