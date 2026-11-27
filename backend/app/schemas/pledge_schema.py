@@ -59,6 +59,10 @@ class PledgeSchema(CamelSchema):
     )
 
     amount = fields.Float(dump_only=True)
+    pledge_type = fields.String(dump_only=True)
+    quantity = fields.Integer(dump_only=True, allow_none=True)
+
+    description = fields.String(dump_only=True, allow_none=True)
 
     date = fields.DateTime(
         attribute="created_at",

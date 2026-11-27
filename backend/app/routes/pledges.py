@@ -1,4 +1,3 @@
-
 from decimal import Decimal
 
 from flask import Blueprint, jsonify
@@ -28,7 +27,7 @@ bp = Blueprint(
 
 
 def _get_own_pledge(pledge_id, donor_id):
-    """Find a pledge belonging to the logged-in donor."""
+    """Find a pledge belonging to the authenticated donor."""
 
     pledge = db.session.scalar(
         select(Pledge).where(
@@ -48,18 +47,36 @@ def _get_own_pledge(pledge_id, donor_id):
 
 
 def _get_pledge_quantity(pledge):
-    """Return the quantity to add to or subtract from an opportunity."""
+    """Return the physical quantity of an in-kind pledge."""
 
-    if pledge.pledge_type == "financial":
-        return Decimal(str(pledge.amount or 0))
+    if pledge.pledge_type == "in_kind":
+        return Decimal(str(pledge.quantity or 0))
 
-    return Decimal(str(pledge.quantity or 0))
+    return Decimal("0")
+
+
+def _has_other_active_pledges(opportunity_id, excluded_pledge_id):
+    """Check whether an opportunity has other active pledges."""
+
+    active_pledge = db.session.scalar(
+        select(Pledge.id)
+        .where(
+            Pledge.opportunity_id == opportunity_id,
+            Pledge.id != excluded_pledge_id,
+            Pledge.status.in_(
+                ("pending", "confirmed", "fulfilled")
+            ),
+        )
+        .limit(1)
+    )
+
+    return active_pledge is not None
 
 
 @bp.post("")
 @role_required("donor")
 def create_pledge():
-    """Create a pledge for a published opportunity."""
+    """Create a financial or in-kind pledge."""
 
     donor = get_current_user()
     data = parse_body(PledgeCreateSchema())
@@ -96,7 +113,7 @@ def create_pledge():
         amount = Decimal("0")
         quantity = data["quantity"]
 
-    else:
+    elif pledge_type == "financial":
         if not data.get("amount"):
             raise ApiError(
                 400,
@@ -106,6 +123,13 @@ def create_pledge():
 
         amount = Decimal(str(data["amount"]))
         quantity = None
+
+    else:
+        raise ApiError(
+            400,
+            "invalid_pledge",
+            "Unsupported pledge type",
+        )
 
     pledge = Pledge(
         donor_id=donor.id,
@@ -121,8 +145,12 @@ def create_pledge():
     db.session.add(pledge)
     db.session.flush()
 
-    pledge.reference = make_reference("PLG", pledge.id)
+    pledge.reference = make_reference(
+        "PLG",
+        pledge.id,
+    )
 
+    # Only in-kind pledges increase resource quantities.
     opportunity.pledged_qty = (
         Decimal(str(opportunity.pledged_qty or 0))
         + _get_pledge_quantity(pledge)
@@ -159,7 +187,7 @@ def create_pledge():
 @bp.get("/mine")
 @role_required("donor")
 def my_pledges():
-    """List pledges belonging to the logged-in donor."""
+    """List pledges belonging to the authenticated donor."""
 
     donor = get_current_user()
 
@@ -177,10 +205,13 @@ def my_pledges():
 @bp.get("/<int:pledge_id>")
 @role_required("donor")
 def get_pledge(pledge_id):
-    """Get one pledge belonging to the logged-in donor."""
+    """Retrieve one pledge belonging to the authenticated donor."""
 
     donor = get_current_user()
-    pledge = _get_own_pledge(pledge_id, donor.id)
+    pledge = _get_own_pledge(
+        pledge_id,
+        donor.id,
+    )
 
     return jsonify({
         "pledge": PledgeSchema().dump(pledge)
@@ -190,10 +221,13 @@ def get_pledge(pledge_id):
 @bp.patch("/<int:pledge_id>/cancel")
 @role_required("donor")
 def cancel_pledge(pledge_id):
-    """Cancel a pending pledge belonging to the logged-in donor."""
+    """Cancel a pending pledge belonging to the donor."""
 
     donor = get_current_user()
-    pledge = _get_own_pledge(pledge_id, donor.id)
+    pledge = _get_own_pledge(
+        pledge_id,
+        donor.id,
+    )
 
     if pledge.status != "pending":
         raise ApiError(
@@ -210,6 +244,7 @@ def cancel_pledge(pledge_id):
 
     pledge_quantity = _get_pledge_quantity(pledge)
 
+    # Reverse only the physical quantity originally pledged.
     opportunity.pledged_qty = max(
         Decimal("0"),
         current_quantity - pledge_quantity,
@@ -217,9 +252,16 @@ def cancel_pledge(pledge_id):
 
     pledge.status = "cancelled"
 
+    # Do not revert the opportunity while other active
+    # financial or in-kind pledges still exist.
+    has_active_pledges = _has_other_active_pledges(
+        opportunity.id,
+        pledge.id,
+    )
+
     if (
         opportunity.stage == "Pledged"
-        and opportunity.pledged_qty == 0
+        and not has_active_pledges
     ):
         opportunity.stage = "Published"
 

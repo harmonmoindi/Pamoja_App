@@ -13,6 +13,7 @@ export const donorRoutes: RouteObject = {
     { path: "donate/:id", element: page("donor/MpesaDonation") },
     { path: "donations", element: page("donor/DonationHistory") },
     { path: "pledges", element: page("donor/MyPledges") },
+    { path: "pledges/new", element: page("donor/PledgePage") },
     { path: "notifications", element: page("donor/Notifications") },
     { path: "appointments", element: page("donor/Appointments") },
     { path: "appointments/book", element: page("donor/AppointmentBooking") },

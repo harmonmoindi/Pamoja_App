@@ -1,5 +1,6 @@
 import { api, type Page } from "@/lib/apiClient";
 import type { AssistanceRequest } from "@/types/request";
+import type { Opportunity } from "@/types/opportunity";
 
 // ASSESSMENTS
 
@@ -34,6 +35,13 @@ export const submitAssessment = (
   api<{ assessment: Assessment }>(
     `/requests/${requestId}/assessment`,
     { method: "POST", body }
+  );
+
+// Publish an approved beneficiary request to the Donor Portal.
+export const publishRequestOpportunity = (requestId: number) =>
+  api<{ message: string; opportunity: Opportunity }>(
+    `/opportunities/from-request/${requestId}`,
+    { method: "POST" }
   );
 
 // RESOURCE MATCHING
