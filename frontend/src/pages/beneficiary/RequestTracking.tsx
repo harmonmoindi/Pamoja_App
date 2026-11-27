@@ -20,7 +20,7 @@ export default function RequestTracking() {
     >
       <div className="bn-track-select bn-section">
         <label>
-          Select a demonstration request
+          Select a request
           <select value={request?.reference ?? ""} onChange={(event) => setSelected(event.target.value)}>
             {requests.map((item) => (
               <option key={item.reference} value={item.reference}>

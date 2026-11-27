@@ -14,3 +14,12 @@ class OrganizationSchema(CamelSchema):
 
     def get_submitted_on(self, org):
         return org.submitted_at.date().isoformat()
+
+
+class VerifiedOrganizationSchema(CamelSchema):
+    """Public fields beneficiaries need when choosing a reviewing agency."""
+
+    id = fields.Int(dump_only=True)
+    name = fields.Str(dump_only=True)
+    categories = fields.List(fields.Str(), dump_only=True)
+    counties = fields.List(fields.Str(), dump_only=True)

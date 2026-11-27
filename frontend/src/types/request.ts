@@ -33,7 +33,14 @@ export type AssistanceRequestCreate = {
   quantity: number;
   unit?: string;
   urgency?: RequestUrgency;
-  organizationId?: number | null;
+  organizationId: number;
+};
+
+export type VerifiedOrganization = {
+  id: number;
+  name: string;
+  categories: string[];
+  counties: string[];
 };
 
 export interface ReceiptConfirmation {

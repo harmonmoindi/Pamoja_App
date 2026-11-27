@@ -11,7 +11,7 @@ export default function RequestDetail() {
 
   if (!request) {
     return (
-      <BeneficiaryPage title="Request not found" description="That demonstration reference is not saved in this browser.">
+      <BeneficiaryPage title="Request not found" description="That request reference was not found in your account.">
         <Link className="bn-secondary bn-section" to="/beneficiary/requests">
           Back to my requests
         </Link>
@@ -22,7 +22,7 @@ export default function RequestDetail() {
   return (
     <BeneficiaryPage
       title={request.title}
-      description={`${request.reference} · Submitted ${request.submittedOn}. Fictional demonstration record.`}
+      description={`${request.reference} · Submitted ${request.submittedOn}. Stage: ${request.stage}.`}
       action={
         <Link className="bn-secondary" to="/beneficiary/requests">
           All requests
@@ -61,13 +61,14 @@ export default function RequestDetail() {
             </div>
           </dl>
           <p>{request.summary}</p>
-          {request.status === "approved" && (
+          {request.status === "approved" && request.stage === "Delivered" && (
             <button className="bn-primary" type="button" onClick={() => confirmReceipt(request.reference)}>
               Confirm receipt
             </button>
           )}
-          {request.status === "fulfilled" && <p className="bn-note">Receipt confirmed for this demonstration. No delivery took place.</p>}
-          {request.status === "under review" && <p className="bn-note">Waiting for an agency decision in this demonstration.</p>}
+          {request.status === "fulfilled" && <p className="bn-note">Receipt confirmed for this request.</p>}
+          {request.status === "under review" && <p className="bn-note">Waiting for agency review. Once approved, this need is published for donors.</p>}
+          {request.stage === "Published" && <p className="bn-note">Approved and published for donors.</p>}
         </section>
         <section className="bn-panel bn-process">
           <h2>Assistance journey</h2>

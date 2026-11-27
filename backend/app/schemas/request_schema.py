@@ -31,7 +31,7 @@ class AssistanceRequestCreateSchema(CamelSchema):
     unit = fields.Str(load_default="units", validate=validate.Length(min=1, max=40))
     urgency = fields.Str(load_default="Medium", validate=validate.OneOf(REQUEST_URGENCIES))
     organization_id = fields.Int(
-        load_default=None, allow_none=True, strict=True, validate=validate.Range(min=1)
+        required=True, strict=True, validate=validate.Range(min=1)
     )
 
 

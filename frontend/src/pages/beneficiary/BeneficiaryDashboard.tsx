@@ -14,13 +14,13 @@ const statLabels = [
 ] as const;
 
 export default function BeneficiaryDashboard() {
-  const { requests } = useBeneficiaryRequests();
+  const { requests, loading, error } = useBeneficiaryRequests();
   const stats = requestStats(requests);
 
   return (
     <BeneficiaryPage
       title="Your assistance dashboard"
-      description="Track demonstration requests from submission through delivery."
+      description="Track requests from submission through agency review and donor support."
       action={
         <Link className="bn-primary" to="/beneficiary/request">
           <Plus size={16} /> New assistance request
@@ -31,8 +31,8 @@ export default function BeneficiaryDashboard() {
         {statLabels.map(([key, label]) => (
           <article key={key} className="bn-stat">
             <span>{label}</span>
-            <strong>{stats[key]}</strong>
-            <small>Demo data</small>
+            <strong>{loading ? "…" : stats[key]}</strong>
+            <small>Live requests</small>
           </article>
         ))}
       </section>
@@ -45,7 +45,13 @@ export default function BeneficiaryDashboard() {
               View all <span aria-hidden="true">→</span>
             </Link>
           </div>
-          <RequestTable requests={requests.slice(0, 4)} caption="Recent demonstration requests" />
+          {error ? (
+            <p className="bn-error" role="alert">{error}</p>
+          ) : loading ? (
+            <p className="bn-empty">Loading your requests...</p>
+          ) : (
+            <RequestTable requests={requests.slice(0, 4)} caption="Recent assistance requests" />
+          )}
         </section>
 
         <section className="bn-panel bn-process">

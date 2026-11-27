@@ -33,15 +33,19 @@ def create_request():
     beneficiary = get_current_user()
     data = parse_body(AssistanceRequestCreateSchema())
 
-    organization_id = data.get("organization_id")
-    if organization_id is not None:
-        organization = db.session.get(Organization, organization_id)
-        if organization is None:
-            raise ApiError(404, "not_found", "Organization not found")
+    organization = db.session.get(Organization, data["organization_id"])
+    if organization is None:
+        raise ApiError(404, "not_found", "Organization not found")
+    if organization.verification_status != "verified":
+        raise ApiError(
+            400,
+            "agency_not_verified",
+            "Only verified agencies can review assistance requests",
+        )
 
     assistance_request = AssistanceRequest(
         beneficiary_id=beneficiary.id,
-        organization_id=organization_id,
+        organization_id=organization.id,
         title=data["title"].strip(),
         category=data["category"].strip(),
         county=data["county"].strip(),

@@ -126,7 +126,7 @@ export function BeneficiaryLayout() {
           <div className="bn-main">
             <Outlet />
             <p className="bn-footnote">
-              Pamoja concept prototype · Fictional data · Local browser storage · No real authentication or donations.
+              Pamoja concept prototype · Requests are sent to the agency API for review, then published for donors.
             </p>
           </div>
         </div>

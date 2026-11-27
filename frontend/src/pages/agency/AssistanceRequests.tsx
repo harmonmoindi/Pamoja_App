@@ -182,7 +182,11 @@ export default function AssistanceRequests() {
       });
 
       setSelectedId(null);
-      setSuccess(`Assessment saved for ${getReference(selectedRequest)}.`);
+      setSuccess(
+        outcome === "approved"
+          ? `Assessment approved for ${getReference(selectedRequest)}. Published for donors.`
+          : `Assessment saved for ${getReference(selectedRequest)}.`
+      );
       refreshRequests();
     } catch (err) {
       setActionError(getErrorMessage(err));

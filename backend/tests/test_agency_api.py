@@ -59,6 +59,9 @@ def test_donor_cannot_access_matching(client, login, agency_data):
     assert response.status_code == 403
 
 def test_assessment_delivery_and_receipt_workflow(client, login, agency_data):
+    from app.models.opportunity import Opportunity
+    from sqlalchemy import select
+
     agency_token = get_token(login, "agency1@example.org")
     request = agency_data["request1"]
     request.quantity = 20
@@ -68,7 +71,11 @@ def test_assessment_delivery_and_receipt_workflow(client, login, agency_data):
     response = client.post(f"/api/requests/{request.id}/assessment", json={"outcome": "approved", "priority": "High", "notes": "Request verified"}, headers=bearer(agency_token))
     assert response.status_code == 201, response.get_json()
     db.session.refresh(request)
-    assert request.stage == "Assessed"
+    assert request.stage == "Published"
+    opportunity = db.session.scalar(select(Opportunity).where(Opportunity.request_id == request.id))
+    assert opportunity is not None
+    assert opportunity.stage == "Published"
+
 
     # 2. Allocate the remaining 10 packs BEFORE creating the delivery.
     response = client.post("/api/matching/allocate", json={"requestId": request.id, "resourceId": agency_data["inventory"].id, "quantity": 10}, headers=bearer(agency_token))
@@ -192,7 +199,7 @@ def test_assessment_needs_info_can_be_finalized(client, login, agency_data):
     response = client.patch(url, json={"outcome": "approved", "priority": "High", "notes": "Documents verified"}, headers=bearer(token))
     assert response.status_code == 200
     db.session.refresh(request)
-    assert request.stage == "Assessed"
+    assert request.stage == "Published"
     response = client.post(url, json={"outcome": "approved", "priority": "High"}, headers=bearer(token))
     assert response.status_code == 409
 
